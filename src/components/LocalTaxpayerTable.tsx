@@ -20,6 +20,7 @@ import {
 import { Search, Send, CheckCircle } from 'lucide-react';
 import { LocalTaxpayer, RiskLevel, useNudgeState, TAX_TYPE_MAP } from '@/hooks/useLocalTaxpayers';
 import { LocalNudgeModal } from './LocalNudgeModal';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import { toast } from 'sonner';
 
 interface LocalTaxpayerTableProps {
@@ -37,6 +38,7 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
   const [riskFilter, setRiskFilter] = useState<string>('all');
   const [selectedTaxpayer, setSelectedTaxpayer] = useState<LocalTaxpayer | null>(null);
   const { sendNudge, isNudgeSent } = useNudgeState();
+  const { isAdmin } = useUserRoles();
 
   const filteredTaxpayers = useMemo(() => {
     return taxpayers.filter((tp) => {
@@ -95,7 +97,7 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
               <TableHead className="font-semibold">Tax Type</TableHead>
               <TableHead className="font-semibold">Risk Score</TableHead>
               <TableHead className="font-semibold">Risk Level</TableHead>
-              <TableHead className="font-semibold text-right">Action</TableHead>
+              {isAdmin && <TableHead className="font-semibold text-right">Action</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -122,23 +124,25 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
                       {tp.riskLevel.charAt(0).toUpperCase() + tp.riskLevel.slice(1)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {isNudgeSent(tp.taxpayer_id) ? (
-                      <Button variant="ghost" size="sm" disabled>
-                        <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                        Sent
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedTaxpayer(tp)}
-                      >
-                        <Send className="mr-2 h-4 w-4" />
-                        Send Nudge
-                      </Button>
-                    )}
-                  </TableCell>
+                  {isAdmin && (
+                    <TableCell className="text-right">
+                      {isNudgeSent(tp.taxpayer_id) ? (
+                        <Button variant="ghost" size="sm" disabled>
+                          <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                          Sent
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedTaxpayer(tp)}
+                        >
+                          <Send className="mr-2 h-4 w-4" />
+                          Send Nudge
+                        </Button>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}
