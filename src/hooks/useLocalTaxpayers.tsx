@@ -102,14 +102,56 @@ export function useLocalDashboardStats() {
   return { data: stats, isLoading: false, error: null };
 }
 
-export function useNudgeState() {
-  const [sentNudges, setSentNudges] = useState<Set<string>>(new Set());
+export interface NudgeRecord {
+  id: string;
+  taxpayerId: string;
+  riskLevel: RiskLevel;
+  nudgeType: 'sms' | 'whatsapp' | 'email';
+  message: string;
+  status: 'pending' | 'sent' | 'delivered' | 'failed';
+  sentAt: string;
+}
 
-  const sendNudge = (taxpayerId: string) => {
-    setSentNudges((prev) => new Set(prev).add(taxpayerId));
+// Global state for nudges (in a real app this would be in context or a state manager)
+let globalNudgeHistory: NudgeRecord[] = [];
+let listeners: Set<() => void> = new Set();
+
+function notifyListeners() {
+  listeners.forEach((fn) => fn());
+}
+
+export function useNudgeState() {
+  const [, forceUpdate] = useState({});
+
+  useMemo(() => {
+    const listener = () => forceUpdate({});
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  }, []);
+
+  const sendNudge = (
+    taxpayerId: string,
+    riskLevel: RiskLevel,
+    message: string,
+    nudgeType: 'sms' | 'whatsapp' | 'email' = 'sms'
+  ) => {
+    const newNudge: NudgeRecord = {
+      id: `nudge-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      taxpayerId,
+      riskLevel,
+      nudgeType,
+      message,
+      status: 'sent',
+      sentAt: new Date().toISOString(),
+    };
+    globalNudgeHistory = [newNudge, ...globalNudgeHistory];
+    notifyListeners();
   };
 
-  const isNudgeSent = (taxpayerId: string) => sentNudges.has(taxpayerId);
+  const isNudgeSent = (taxpayerId: string) =>
+    globalNudgeHistory.some((n) => n.taxpayerId === taxpayerId);
 
-  return { sendNudge, isNudgeSent };
+  const getNudgeHistory = () => globalNudgeHistory;
+
+  return { sendNudge, isNudgeSent, getNudgeHistory };
 }

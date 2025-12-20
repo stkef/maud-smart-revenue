@@ -31,9 +31,9 @@ export function HighRiskTable({ taxpayers }: HighRiskTableProps) {
       .slice(0, 20); // Top 20 high-risk
   }, [taxpayers]);
 
-  const handleNudgeConfirm = () => {
+  const handleNudgeConfirm = (message: string) => {
     if (selectedTaxpayer) {
-      sendNudge(selectedTaxpayer.taxpayer_id);
+      sendNudge(selectedTaxpayer.taxpayer_id, selectedTaxpayer.riskLevel, message);
       toast.success(`Early reminder sent to ${selectedTaxpayer.taxpayer_id}`);
     }
   };

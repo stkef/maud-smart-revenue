@@ -18,7 +18,7 @@ interface LocalNudgeModalProps {
   onClose: () => void;
   taxpayerId: string;
   riskLevel: RiskLevel;
-  onConfirm: () => void;
+  onConfirm: (message: string) => void;
 }
 
 // Behavioral recommendations based on risk level
@@ -62,7 +62,7 @@ export function LocalNudgeModal({
       setIsSending(false);
       setIsSent(true);
       setTimeout(() => {
-        onConfirm();
+        onConfirm(message);
         setIsSent(false);
         setMessage(template.message);
         onClose();
