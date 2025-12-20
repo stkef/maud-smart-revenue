@@ -53,9 +53,9 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
     });
   }, [taxpayers, search, riskFilter]);
 
-  const handleNudgeConfirm = () => {
+  const handleNudgeConfirm = (message: string) => {
     if (selectedTaxpayer) {
-      sendNudge(selectedTaxpayer.taxpayer_id);
+      sendNudge(selectedTaxpayer.taxpayer_id, selectedTaxpayer.riskLevel, message);
       toast.success(`Nudge sent to ${selectedTaxpayer.taxpayer_id}`);
     }
   };

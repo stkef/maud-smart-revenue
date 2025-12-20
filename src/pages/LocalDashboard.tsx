@@ -1,4 +1,4 @@
-import { useLocalTaxpayers, useLocalDashboardStats } from '@/hooks/useLocalTaxpayers';
+import { useLocalTaxpayers, useLocalDashboardStats, useNudgeState } from '@/hooks/useLocalTaxpayers';
 import { LocalKPICards } from '@/components/LocalKPICards';
 import { LocalRiskChart } from '@/components/LocalRiskChart';
 import { LocalTaxpayerTable } from '@/components/LocalTaxpayerTable';
@@ -6,16 +6,19 @@ import { WardRiskChart } from '@/components/WardRiskChart';
 import { ArrearsRecoveryChart } from '@/components/ArrearsRecoveryChart';
 import { RiskFactorsPanel } from '@/components/RiskFactorsPanel';
 import { HighRiskTable } from '@/components/HighRiskTable';
+import { NudgeHistoryTable } from '@/components/NudgeHistoryTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain } from 'lucide-react';
+import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function LocalDashboard() {
   const { data: taxpayers } = useLocalTaxpayers();
   const { data: stats } = useLocalDashboardStats();
+  const { getNudgeHistory } = useNudgeState();
   const { user, signOut } = useAuth();
+  const nudgeHistory = getNudgeHistory();
 
   return (
     <div className="min-h-screen bg-background">
@@ -50,7 +53,7 @@ export default function LocalDashboard() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
             <TabsTrigger value="overview" className="gap-2">
               <BarChart3 className="h-4 w-4 hidden sm:inline" />
               Overview
@@ -62,6 +65,10 @@ export default function LocalDashboard() {
             <TabsTrigger value="all-taxpayers" className="gap-2">
               <Users className="h-4 w-4 hidden sm:inline" />
               All Taxpayers
+            </TabsTrigger>
+            <TabsTrigger value="nudge-history" className="gap-2">
+              <MessageSquare className="h-4 w-4 hidden sm:inline" />
+              Nudges {nudgeHistory.length > 0 && `(${nudgeHistory.length})`}
             </TabsTrigger>
             <TabsTrigger value="explainability" className="gap-2">
               <Brain className="h-4 w-4 hidden sm:inline" />
@@ -152,6 +159,11 @@ export default function LocalDashboard() {
                 <LocalTaxpayerTable taxpayers={taxpayers} />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Nudge History Tab */}
+          <TabsContent value="nudge-history" className="space-y-6">
+            <NudgeHistoryTable nudges={nudgeHistory} />
           </TabsContent>
 
           {/* Explainability Tab */}
