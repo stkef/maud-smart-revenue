@@ -3,23 +3,37 @@ import { LocalKPICards } from '@/components/LocalKPICards';
 import { LocalRiskChart } from '@/components/LocalRiskChart';
 import { LocalTaxpayerTable } from '@/components/LocalTaxpayerTable';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LayoutDashboard } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { LayoutDashboard, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LocalDashboard() {
   const { data: taxpayers } = useLocalTaxpayers();
   const { data: stats } = useLocalDashboardStats();
+  const { user, signOut } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <LayoutDashboard className="h-6 w-6 text-primary" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <LayoutDashboard className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Officer Dashboard</h1>
+                <p className="text-sm text-muted-foreground">Tax Collection Risk Management</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold">Officer Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Tax Collection Risk Management</p>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                {user?.email}
+              </span>
+              <Button variant="outline" size="sm" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
             </div>
           </div>
         </div>
