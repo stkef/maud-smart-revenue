@@ -21,10 +21,20 @@ interface LocalNudgeModalProps {
   onConfirm: () => void;
 }
 
-const nudgeTemplates: Record<RiskLevel, string> = {
-  high: `URGENT NOTICE: Your tax payment is significantly overdue. Immediate action is required to avoid further penalties and legal proceedings. Please contact the tax office immediately.`,
-  medium: `REMINDER: Your tax payment is overdue. Please clear your dues at the earliest to avoid additional penalties. Visit the tax office or pay online.`,
-  low: `FRIENDLY REMINDER: Your tax payment is due soon. Please ensure timely payment to maintain your good standing. Thank you for your cooperation.`,
+// Behavioral recommendations based on risk level
+const nudgeTemplates: Record<RiskLevel, { title: string; message: string }> = {
+  high: {
+    title: 'Early Reminder & Follow-up',
+    message: `URGENT NOTICE: Your tax payment is significantly overdue. Immediate action is required to avoid further penalties and legal proceedings. A follow-up visit from the revenue officer may be scheduled. Please contact the tax office immediately to discuss payment options.`,
+  },
+  medium: {
+    title: 'Standard Deadline Reminder',
+    message: `REMINDER: Your tax payment deadline is approaching. Please clear your dues at the earliest to avoid additional penalties. You can pay online or visit the tax office during working hours.`,
+  },
+  low: {
+    title: 'Polite Informational Nudge',
+    message: `FRIENDLY REMINDER: Your tax payment is due soon. Thank you for your consistent compliance. Please ensure timely payment to maintain your good standing with the municipality.`,
+  },
 };
 
 const riskColors: Record<RiskLevel, string> = {
@@ -40,7 +50,8 @@ export function LocalNudgeModal({
   riskLevel,
   onConfirm,
 }: LocalNudgeModalProps) {
-  const [message, setMessage] = useState(nudgeTemplates[riskLevel]);
+  const template = nudgeTemplates[riskLevel];
+  const [message, setMessage] = useState(template.message);
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
 
@@ -53,7 +64,7 @@ export function LocalNudgeModal({
       setTimeout(() => {
         onConfirm();
         setIsSent(false);
-        setMessage(nudgeTemplates[riskLevel]);
+        setMessage(template.message);
         onClose();
       }, 1000);
     }, 800);
@@ -62,7 +73,7 @@ export function LocalNudgeModal({
   const handleClose = () => {
     if (!isSending) {
       setIsSent(false);
-      setMessage(nudgeTemplates[riskLevel]);
+      setMessage(template.message);
       onClose();
     }
   };
@@ -89,6 +100,13 @@ export function LocalNudgeModal({
             <Badge className={riskColors[riskLevel]}>
               {riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)} Risk
             </Badge>
+          </div>
+
+          <div className="p-3 border rounded-lg bg-card">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+              Behavioral Recommendation
+            </p>
+            <p className="text-sm font-medium text-primary">{template.title}</p>
           </div>
 
           <div className="space-y-2">
