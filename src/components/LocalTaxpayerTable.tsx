@@ -17,11 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Send, CheckCircle } from 'lucide-react';
-import { LocalTaxpayer, RiskLevel, useNudgeState, TAX_TYPE_MAP } from '@/hooks/useLocalTaxpayers';
+import { Search, Send, CheckCircle, Loader2, Phone, MessageSquare } from 'lucide-react';
+import { LocalTaxpayer, RiskLevel, TAX_TYPE_MAP } from '@/hooks/useLocalTaxpayers';
 import { LocalNudgeModal } from './LocalNudgeModal';
 import { useUserRoles } from '@/hooks/useUserRoles';
-import { toast } from 'sonner';
+import { useMessagingIntegration } from '@/hooks/useMessagingIntegration';
 
 interface LocalTaxpayerTableProps {
   taxpayers: LocalTaxpayer[];
@@ -37,8 +37,8 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('all');
   const [selectedTaxpayer, setSelectedTaxpayer] = useState<LocalTaxpayer | null>(null);
-  const { sendNudge, isNudgeSent } = useNudgeState();
   const { isAdmin } = useUserRoles();
+  const { isNudgeSent, getNudgeState, providerInfo } = useMessagingIntegration();
 
   const filteredTaxpayers = useMemo(() => {
     return taxpayers.filter((tp) => {
@@ -55,11 +55,55 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
     });
   }, [taxpayers, search, riskFilter]);
 
-  const handleNudgeConfirm = (message: string) => {
-    if (selectedTaxpayer) {
-      sendNudge(selectedTaxpayer.taxpayer_id, selectedTaxpayer.riskLevel, message);
-      toast.success(`Nudge sent to ${selectedTaxpayer.taxpayer_id}`);
+  const getNudgeStatusDisplay = (taxpayerId: string) => {
+    const state = getNudgeState(taxpayerId);
+    if (!state) return null;
+
+    if (state.status === 'pending') {
+      return (
+        <Button variant="ghost" size="sm" disabled>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Sending...
+        </Button>
+      );
     }
+
+    if (state.status === 'sent' && state.result) {
+      return (
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" disabled>
+            <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+            Sent
+          </Button>
+          <Badge variant="outline" className="text-xs">
+            {state.result.channel === 'whatsapp' ? (
+              <MessageSquare className="h-3 w-3 mr-1" />
+            ) : (
+              <Phone className="h-3 w-3 mr-1" />
+            )}
+            {state.result.provider}
+          </Badge>
+        </div>
+      );
+    }
+
+    if (state.status === 'failed') {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-destructive border-destructive"
+          onClick={() => {
+            const tp = taxpayers.find(t => t.taxpayer_id === taxpayerId);
+            if (tp) setSelectedTaxpayer(tp);
+          }}
+        >
+          Retry
+        </Button>
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -86,6 +130,19 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Provider Info Banner */}
+      {isAdmin && (
+        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm">
+          <span className="text-muted-foreground">Messaging Provider:</span>
+          <Badge variant="outline" className="font-mono">
+            {providerInfo.provider.toUpperCase()}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            ({providerInfo.provider === 'mock' ? 'Simulated delivery' : 'Real SMS delivery'})
+          </span>
+        </div>
+      )}
 
       <div className="rounded-lg border bg-card overflow-hidden">
         <Table>
@@ -127,10 +184,9 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
                   {isAdmin && (
                     <TableCell className="text-right">
                       {isNudgeSent(tp.taxpayer_id) ? (
-                        <Button variant="ghost" size="sm" disabled>
-                          <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                          Sent
-                        </Button>
+                        getNudgeStatusDisplay(tp.taxpayer_id)
+                      ) : getNudgeState(tp.taxpayer_id)?.status === 'pending' ? (
+                        getNudgeStatusDisplay(tp.taxpayer_id)
                       ) : (
                         <Button
                           variant="outline"
@@ -158,9 +214,7 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
         <LocalNudgeModal
           isOpen={!!selectedTaxpayer}
           onClose={() => setSelectedTaxpayer(null)}
-          taxpayerId={selectedTaxpayer.taxpayer_id}
-          riskLevel={selectedTaxpayer.riskLevel}
-          onConfirm={handleNudgeConfirm}
+          taxpayer={selectedTaxpayer}
         />
       )}
     </div>

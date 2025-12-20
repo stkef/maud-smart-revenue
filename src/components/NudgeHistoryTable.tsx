@@ -10,21 +10,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, MessageSquare, Mail, Phone, CheckCircle, Clock, XCircle } from 'lucide-react';
-
-export interface NudgeRecord {
-  id: string;
-  taxpayerId: string;
-  riskLevel: 'low' | 'medium' | 'high';
-  nudgeType: 'sms' | 'whatsapp' | 'email';
-  message: string;
-  status: 'pending' | 'sent' | 'delivered' | 'failed';
-  sentAt: string;
-}
-
-interface NudgeHistoryTableProps {
-  nudges: NudgeRecord[];
-}
+import { Button } from '@/components/ui/button';
+import { Search, MessageSquare, Mail, Phone, CheckCircle, Clock, XCircle, Trash2 } from 'lucide-react';
+import { useMessagingIntegration, NudgeState } from '@/hooks/useMessagingIntegration';
 
 const riskColors: Record<string, string> = {
   low: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
@@ -57,14 +45,17 @@ const channelIcons: Record<string, React.ReactNode> = {
   email: <Mail className="h-4 w-4" />,
 };
 
-export function NudgeHistoryTable({ nudges }: NudgeHistoryTableProps) {
+export function NudgeHistoryTable() {
   const [searchQuery, setSearchQuery] = useState('');
+  const { getAllNudgeStates, clearNudgeHistory, providerInfo } = useMessagingIntegration();
+  
+  const nudgeStates = getAllNudgeStates();
 
   const filteredNudges = useMemo(() => {
-    return nudges.filter((nudge) =>
-      nudge.taxpayerId.toLowerCase().includes(searchQuery.toLowerCase())
+    return nudgeStates.filter((state) =>
+      state.taxpayerId.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [nudges, searchQuery]);
+  }, [nudgeStates, searchQuery]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-IN', {
@@ -80,24 +71,45 @@ export function NudgeHistoryTable({ nudges }: NudgeHistoryTableProps) {
     <Card className="bg-card border-border">
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <CardTitle className="text-lg font-semibold text-foreground">
-            Nudge History ({nudges.length} total)
-          </CardTitle>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by Taxpayer ID..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-background border-border"
-            />
+          <div>
+            <CardTitle className="text-lg font-semibold text-foreground">
+              Nudge History ({nudgeStates.length} total)
+            </CardTitle>
+            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+              <span>Provider:</span>
+              <Badge variant="outline" className="font-mono text-xs">
+                {providerInfo.provider.toUpperCase()}
+              </Badge>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by Taxpayer ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-background border-border"
+              />
+            </div>
+            {nudgeStates.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={clearNudgeHistory}
+                className="text-muted-foreground"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent>
         {filteredNudges.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            {nudges.length === 0 
+            {nudgeStates.length === 0 
               ? "No nudges sent yet. Send your first nudge from the High Risk or All Taxpayers tab."
               : "No nudges found matching your search."}
           </div>
@@ -108,45 +120,51 @@ export function NudgeHistoryTable({ nudges }: NudgeHistoryTableProps) {
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
                   <TableHead className="text-muted-foreground font-medium">Taxpayer ID</TableHead>
                   <TableHead className="text-muted-foreground font-medium">Channel</TableHead>
-                  <TableHead className="text-muted-foreground font-medium">Risk Level</TableHead>
+                  <TableHead className="text-muted-foreground font-medium">Provider</TableHead>
                   <TableHead className="text-muted-foreground font-medium">Status</TableHead>
                   <TableHead className="text-muted-foreground font-medium">Sent At</TableHead>
-                  <TableHead className="text-muted-foreground font-medium max-w-xs">Message Preview</TableHead>
+                  <TableHead className="text-muted-foreground font-medium">Message ID</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredNudges.map((nudge) => (
-                  <TableRow key={nudge.id} className="hover:bg-muted/30">
+                {filteredNudges.map((state) => (
+                  <TableRow key={state.taxpayerId} className="hover:bg-muted/30">
                     <TableCell className="font-mono text-sm text-foreground">
-                      {nudge.taxpayerId}
+                      {state.taxpayerId}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2 text-muted-foreground capitalize">
-                        {channelIcons[nudge.nudgeType]}
-                        {nudge.nudgeType}
-                      </div>
+                      {state.result ? (
+                        <div className="flex items-center gap-2 text-muted-foreground capitalize">
+                          {channelIcons[state.result.channel]}
+                          {state.result.channel}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={riskColors[nudge.riskLevel]}>
-                        {nudge.riskLevel.toUpperCase()}
-                      </Badge>
+                      {state.result ? (
+                        <Badge variant="outline" className="font-mono text-xs">
+                          {state.result.provider.toUpperCase()}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge 
                         variant="outline" 
-                        className={`${statusConfig[nudge.status].color} flex items-center gap-1 w-fit`}
+                        className={`${statusConfig[state.status].color} flex items-center gap-1 w-fit`}
                       >
-                        {statusConfig[nudge.status].icon}
-                        {nudge.status.charAt(0).toUpperCase() + nudge.status.slice(1)}
+                        {statusConfig[state.status].icon}
+                        {state.status.charAt(0).toUpperCase() + state.status.slice(1)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {formatDate(nudge.sentAt)}
+                      {state.result?.timestamp ? formatDate(state.result.timestamp) : '-'}
                     </TableCell>
-                    <TableCell className="max-w-xs">
-                      <p className="text-sm text-muted-foreground truncate" title={nudge.message}>
-                        {nudge.message.slice(0, 60)}...
-                      </p>
+                    <TableCell className="font-mono text-xs text-muted-foreground max-w-[150px] truncate">
+                      {state.result?.messageId || '-'}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,32 +10,25 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, CheckCircle } from 'lucide-react';
-import { RiskLevel } from '@/hooks/useLocalTaxpayers';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Send, CheckCircle, MessageSquare, Phone, Mail } from 'lucide-react';
+import { RiskLevel, LocalTaxpayer } from '@/hooks/useLocalTaxpayers';
+import { useMessagingIntegration } from '@/hooks/useMessagingIntegration';
+import { makeDecision, type Channel } from '@/integrations/messaging';
+import { toast } from 'sonner';
 
 interface LocalNudgeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  taxpayerId: string;
-  riskLevel: RiskLevel;
-  onConfirm: (message: string) => void;
+  taxpayer: LocalTaxpayer;
+  onSuccess?: () => void;
 }
-
-// Behavioral recommendations based on risk level
-const nudgeTemplates: Record<RiskLevel, { title: string; message: string }> = {
-  high: {
-    title: 'Early Reminder & Follow-up',
-    message: `URGENT NOTICE: Your tax payment is significantly overdue. Immediate action is required to avoid further penalties and legal proceedings. A follow-up visit from the revenue officer may be scheduled. Please contact the tax office immediately to discuss payment options.`,
-  },
-  medium: {
-    title: 'Standard Deadline Reminder',
-    message: `REMINDER: Your tax payment deadline is approaching. Please clear your dues at the earliest to avoid additional penalties. You can pay online or visit the tax office during working hours.`,
-  },
-  low: {
-    title: 'Polite Informational Nudge',
-    message: `FRIENDLY REMINDER: Your tax payment is due soon. Thank you for your consistent compliance. Please ensure timely payment to maintain your good standing with the municipality.`,
-  },
-};
 
 const riskColors: Record<RiskLevel, string> = {
   high: 'bg-destructive text-destructive-foreground',
@@ -43,72 +36,161 @@ const riskColors: Record<RiskLevel, string> = {
   low: 'bg-green-500 text-white',
 };
 
+const channelIcons: Record<Channel, React.ReactNode> = {
+  sms: <Phone className="h-4 w-4" />,
+  whatsapp: <MessageSquare className="h-4 w-4" />,
+};
+
 export function LocalNudgeModal({
   isOpen,
   onClose,
-  taxpayerId,
-  riskLevel,
-  onConfirm,
+  taxpayer,
+  onSuccess,
 }: LocalNudgeModalProps) {
-  const template = nudgeTemplates[riskLevel];
-  const [message, setMessage] = useState(template.message);
+  const { sendNudge, providerInfo } = useMessagingIntegration();
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const [lastResult, setLastResult] = useState<{
+    channel: Channel;
+    provider: string;
+    status: string;
+  } | null>(null);
 
-  const handleConfirm = () => {
+  // Get decision from decision engine
+  const decision = makeDecision({
+    taxpayer_id: taxpayer.taxpayer_id,
+    ward: taxpayer.ward,
+    zone: taxpayer.zone,
+    tax_type: taxpayer.tax_type,
+    default_risk_probability: taxpayer.default_risk_probability,
+    risk_category: taxpayer.risk_category,
+    due_amount: taxpayer.due_amount,
+    arrears_amount: taxpayer.arrears_amount,
+  });
+
+  const [message, setMessage] = useState(decision.message);
+  const [channel, setChannel] = useState<Channel>(decision.channel);
+
+  // Reset state when taxpayer changes
+  useEffect(() => {
+    setMessage(decision.message);
+    setChannel(decision.channel);
+    setIsSent(false);
+    setLastResult(null);
+  }, [taxpayer.taxpayer_id, decision.message, decision.channel]);
+
+  const handleConfirm = async () => {
     setIsSending(true);
-    // Mock sending delay
-    setTimeout(() => {
+    try {
+      const result = await sendNudge(taxpayer, message, channel);
+      
+      setLastResult({
+        channel: result.channel,
+        provider: result.provider,
+        status: result.status,
+      });
+
+      if (result.status === 'sent' || result.status === 'delivered') {
+        setIsSent(true);
+        toast.success(`Nudge sent via ${result.channel.toUpperCase()} (${result.provider})`, {
+          description: `Status: ${result.status}`,
+        });
+        
+        setTimeout(() => {
+          onSuccess?.();
+          onClose();
+        }, 1500);
+      } else {
+        toast.error('Failed to send nudge', {
+          description: result.error || 'Unknown error',
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to send nudge');
+    } finally {
       setIsSending(false);
-      setIsSent(true);
-      setTimeout(() => {
-        onConfirm(message);
-        setIsSent(false);
-        setMessage(template.message);
-        onClose();
-      }, 1000);
-    }, 800);
+    }
   };
 
   const handleClose = () => {
     if (!isSending) {
       setIsSent(false);
-      setMessage(template.message);
+      setLastResult(null);
       onClose();
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="h-5 w-5" />
-            Send Nudge
+            Send Nudge via Integration Layer
           </DialogTitle>
           <DialogDescription>
-            Send a payment reminder to this taxpayer
+            Send a personalized payment reminder using the messaging integration
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Taxpayer Info */}
           <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
             <div>
               <p className="text-sm text-muted-foreground">Taxpayer ID</p>
-              <p className="font-semibold">{taxpayerId}</p>
+              <p className="font-semibold">{taxpayer.taxpayer_id}</p>
             </div>
-            <Badge className={riskColors[riskLevel]}>
-              {riskLevel.charAt(0).toUpperCase() + riskLevel.slice(1)} Risk
+            <Badge className={riskColors[taxpayer.riskLevel]}>
+              {taxpayer.riskLevel.charAt(0).toUpperCase() + taxpayer.riskLevel.slice(1)} Risk
             </Badge>
           </div>
 
-          <div className="p-3 border rounded-lg bg-card">
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-              Behavioral Recommendation
-            </p>
-            <p className="text-sm font-medium text-primary">{template.title}</p>
+          {/* Provider Info */}
+          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg text-sm">
+            <span className="text-muted-foreground">Provider:</span>
+            <Badge variant="outline" className="font-mono">
+              {providerInfo.provider.toUpperCase()}
+            </Badge>
+            <span className="text-muted-foreground">|</span>
+            <span className="text-muted-foreground">Priority:</span>
+            <Badge variant={decision.priority === 'urgent' ? 'destructive' : 'secondary'}>
+              {decision.priority}
+            </Badge>
           </div>
 
+          {/* Channel Selection */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Communication Channel</label>
+            <Select 
+              value={channel} 
+              onValueChange={(v) => setChannel(v as Channel)}
+              disabled={isSending || isSent}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sms">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    SMS
+                  </div>
+                </SelectItem>
+                <SelectItem value="whatsapp">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    WhatsApp
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Recommended: {decision.channel.toUpperCase()} based on risk level
+              {decision.fallbackChannel && ` (fallback: ${decision.fallbackChannel.toUpperCase()})`}
+            </p>
+          </div>
+
+          {/* Message */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Message</label>
             <Textarea
@@ -118,7 +200,30 @@ export function LocalNudgeModal({
               className="resize-none"
               disabled={isSending || isSent}
             />
+            <p className="text-xs text-muted-foreground">
+              AI-generated based on risk profile. You can customize before sending.
+            </p>
           </div>
+
+          {/* Result Display */}
+          {lastResult && (
+            <div className={`p-3 rounded-lg border ${
+              lastResult.status === 'sent' || lastResult.status === 'delivered'
+                ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
+                : 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800'
+            }`}>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Delivery Status</span>
+                <Badge variant={lastResult.status === 'sent' ? 'default' : 'destructive'}>
+                  {lastResult.status}
+                </Badge>
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground grid grid-cols-2 gap-2">
+                <div>Channel: <span className="font-mono">{lastResult.channel}</span></div>
+                <div>Provider: <span className="font-mono">{lastResult.provider}</span></div>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -135,8 +240,8 @@ export function LocalNudgeModal({
               'Sending...'
             ) : (
               <>
-                <Send className="mr-2 h-4 w-4" />
-                Send Nudge
+                {channelIcons[channel]}
+                <span className="ml-2">Send via {channel.toUpperCase()}</span>
               </>
             )}
           </Button>
