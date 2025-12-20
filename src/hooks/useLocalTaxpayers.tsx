@@ -56,10 +56,13 @@ export interface LocalDashboardStats {
   lowRiskCount: number;
 }
 
-function mapRiskCategory(riskCategory: string): RiskLevel {
-  const category = riskCategory.toLowerCase();
-  if (category === 'high') return 'high';
-  if (category === 'medium') return 'medium';
+// Risk classification based on probability thresholds:
+// Low Risk: probability < 0.3
+// Medium Risk: probability between 0.3 and 0.6
+// High Risk: probability > 0.6
+function calculateRiskLevel(probability: number): RiskLevel {
+  if (probability > 0.6) return 'high';
+  if (probability >= 0.3) return 'medium';
   return 'low';
 }
 
@@ -67,7 +70,7 @@ export function useLocalTaxpayers() {
   const taxpayers = useMemo<LocalTaxpayer[]>(() => {
     return taxpayerData.map((tp) => ({
       ...tp,
-      riskLevel: mapRiskCategory(tp.risk_category),
+      riskLevel: calculateRiskLevel(tp.default_risk_probability),
     }));
   }, []);
 
