@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, Mail, Lock, User, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Building2, Mail, Lock, User, Loader2, Eye, EyeOff, ArrowLeft, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -18,6 +19,8 @@ export default function Auth() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -27,6 +30,9 @@ export default function Auth() {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  
+  // Reset password state
+  const [resetEmail, setResetEmail] = useState('');
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -77,6 +83,35 @@ export default function Auth() {
 
     toast.success('Welcome back!');
     navigate('/');
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      emailSchema.parse(resetEmail);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        return;
+      }
+    }
+
+    setLoading(true);
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setResetEmailSent(true);
+    toast.success('Password reset email sent! Check your inbox.');
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -211,6 +246,15 @@ export default function Auth() {
                     'Sign In'
                   )}
                 </Button>
+
+                <Button
+                  type="button"
+                  variant="link"
+                  className="w-full text-sm text-muted-foreground"
+                  onClick={() => setShowForgotPassword(true)}
+                >
+                  Forgot your password?
+                </Button>
               </form>
             </TabsContent>
 
@@ -286,6 +330,88 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={(open) => {
+        setShowForgotPassword(open);
+        if (!open) {
+          setResetEmailSent(false);
+          setResetEmail('');
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {resetEmailSent ? (
+            <div className="py-6 text-center space-y-4">
+              <div className="mx-auto w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <p className="font-medium">Check your email</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  We've sent a password reset link to <strong>{resetEmail}</strong>
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setResetEmailSent(false);
+                  setResetEmail('');
+                }}
+              >
+                Back to Sign In
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="Enter your email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    className="pl-9"
+                    required
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowForgotPassword(false)}
+                  className="flex-1"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+                <Button type="submit" className="flex-1" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Reset Link'
+                  )}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <p className="mt-8 text-xs text-muted-foreground text-center animate-fade-in">
