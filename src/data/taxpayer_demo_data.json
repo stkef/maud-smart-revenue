@@ -1,0 +1,22 @@
+[
+  { "taxpayer_id": "TP001", "ward": "Ward 1", "zone": "North Zone", "tax_type": "Property Tax", "due_amount": 15000, "arrears_amount": 5000, "penalty_amount": 1500, "delay_days": 120, "default_risk_label": 1 },
+  { "taxpayer_id": "TP002", "ward": "Ward 2", "zone": "South Zone", "tax_type": "Water Tax", "due_amount": 8000, "arrears_amount": 0, "penalty_amount": 0, "delay_days": 0, "default_risk_label": 0 },
+  { "taxpayer_id": "TP003", "ward": "Ward 1", "zone": "North Zone", "tax_type": "Drainage Tax", "due_amount": 12000, "arrears_amount": 3000, "penalty_amount": 600, "delay_days": 45, "default_risk_label": 0 },
+  { "taxpayer_id": "TP004", "ward": "Ward 3", "zone": "East Zone", "tax_type": "Commercial Tax", "due_amount": 25000, "arrears_amount": 10000, "penalty_amount": 2500, "delay_days": 180, "default_risk_label": 1 },
+  { "taxpayer_id": "TP005", "ward": "Ward 2", "zone": "South Zone", "tax_type": "Property Tax", "due_amount": 18000, "arrears_amount": 2000, "penalty_amount": 400, "delay_days": 30, "default_risk_label": 0 },
+  { "taxpayer_id": "TP006", "ward": "Ward 4", "zone": "West Zone", "tax_type": "Water Tax", "due_amount": 6000, "arrears_amount": 0, "penalty_amount": 0, "delay_days": 10, "default_risk_label": 0 },
+  { "taxpayer_id": "TP007", "ward": "Ward 3", "zone": "East Zone", "tax_type": "Property Tax", "due_amount": 22000, "arrears_amount": 8000, "penalty_amount": 1600, "delay_days": 90, "default_risk_label": 1 },
+  { "taxpayer_id": "TP008", "ward": "Ward 1", "zone": "North Zone", "tax_type": "Commercial Tax", "due_amount": 30000, "arrears_amount": 0, "penalty_amount": 0, "delay_days": 5, "default_risk_label": 0 },
+  { "taxpayer_id": "TP009", "ward": "Ward 4", "zone": "West Zone", "tax_type": "Drainage Tax", "due_amount": 9000, "arrears_amount": 4500, "penalty_amount": 900, "delay_days": 150, "default_risk_label": 1 },
+  { "taxpayer_id": "TP010", "ward": "Ward 2", "zone": "South Zone", "tax_type": "Property Tax", "due_amount": 14000, "arrears_amount": 1000, "penalty_amount": 200, "delay_days": 20, "default_risk_label": 0 },
+  { "taxpayer_id": "TP011", "ward": "Ward 5", "zone": "Central Zone", "tax_type": "Commercial Tax", "due_amount": 35000, "arrears_amount": 15000, "penalty_amount": 3000, "delay_days": 200, "default_risk_label": 1 },
+  { "taxpayer_id": "TP012", "ward": "Ward 3", "zone": "East Zone", "tax_type": "Water Tax", "due_amount": 7000, "arrears_amount": 0, "penalty_amount": 0, "delay_days": 0, "default_risk_label": 0 },
+  { "taxpayer_id": "TP013", "ward": "Ward 5", "zone": "Central Zone", "tax_type": "Property Tax", "due_amount": 20000, "arrears_amount": 6000, "penalty_amount": 1200, "delay_days": 75, "default_risk_label": 0 },
+  { "taxpayer_id": "TP014", "ward": "Ward 1", "zone": "North Zone", "tax_type": "Drainage Tax", "due_amount": 11000, "arrears_amount": 5500, "penalty_amount": 1100, "delay_days": 130, "default_risk_label": 1 },
+  { "taxpayer_id": "TP015", "ward": "Ward 4", "zone": "West Zone", "tax_type": "Commercial Tax", "due_amount": 28000, "arrears_amount": 0, "penalty_amount": 0, "delay_days": 15, "default_risk_label": 0 },
+  { "taxpayer_id": "TP016", "ward": "Ward 2", "zone": "South Zone", "tax_type": "Property Tax", "due_amount": 16000, "arrears_amount": 8000, "penalty_amount": 1600, "delay_days": 160, "default_risk_label": 1 },
+  { "taxpayer_id": "TP017", "ward": "Ward 5", "zone": "Central Zone", "tax_type": "Water Tax", "due_amount": 5000, "arrears_amount": 0, "penalty_amount": 0, "delay_days": 0, "default_risk_label": 0 },
+  { "taxpayer_id": "TP018", "ward": "Ward 3", "zone": "East Zone", "tax_type": "Drainage Tax", "due_amount": 10000, "arrears_amount": 2500, "penalty_amount": 500, "delay_days": 50, "default_risk_label": 0 },
+  { "taxpayer_id": "TP019", "ward": "Ward 1", "zone": "North Zone", "tax_type": "Commercial Tax", "due_amount": 40000, "arrears_amount": 20000, "penalty_amount": 4000, "delay_days": 220, "default_risk_label": 1 },
+  { "taxpayer_id": "TP020", "ward": "Ward 4", "zone": "West Zone", "tax_type": "Property Tax", "due_amount": 17000, "arrears_amount": 3500, "penalty_amount": 700, "delay_days": 60, "default_risk_label": 0 }
+]
