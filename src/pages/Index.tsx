@@ -1,34 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { StatsCard } from '@/components/StatsCard';
 import { RiskDistributionChart } from '@/components/RiskDistributionChart';
-import { ArrearsTrendChart } from '@/components/ArrearsTrendChart';
-import { TaxpayerTable } from '@/components/TaxpayerTable';
-import { TaxpayerProfile } from '@/components/TaxpayerProfile';
+import { TaxpayerTableLive } from '@/components/TaxpayerTableLive';
+import { TaxpayerProfileLive } from '@/components/TaxpayerProfileLive';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockTaxpayers, mockDashboardStats } from '@/data/mockData';
-import { Taxpayer } from '@/types/taxpayer';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTaxpayers, useDashboardStats, TaxpayerWithRisk } from '@/hooks/useTaxpayers';
+import { useAuth } from '@/hooks/useAuth';
 import {
-  Building2,
-  IndianRupee,
-  TrendingUp,
-  AlertTriangle,
   Users,
-  Send,
+  AlertTriangle,
+  AlertCircle,
+  CheckCircle,
   PieChart,
-  BarChart3,
 } from 'lucide-react';
 
 export default function Index() {
-  const [selectedTaxpayer, setSelectedTaxpayer] = useState<Taxpayer | null>(null);
-  const stats = mockDashboardStats;
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { data: taxpayers, isLoading: taxpayersLoading } = useTaxpayers();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const [selectedTaxpayer, setSelectedTaxpayer] = useState<TaxpayerWithRisk | null>(null);
 
-  const formatCurrency = (amount: number) => {
-    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)} Cr`;
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)} L`;
-    return `₹${amount.toLocaleString('en-IN')}`;
-  };
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  const riskDistributionData = stats ? {
+    low: stats.lowRiskCount,
+    medium: stats.mediumRiskCount,
+    high: stats.highRiskCount,
+  } : { low: 0, medium: 0, high: 0 };
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,88 +58,65 @@ export default function Index() {
           </p>
         </div>
 
-        {/* Stats Grid */}
+        {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard
-            title="Total Properties"
-            value={stats.totalProperties.toLocaleString()}
-            subtitle="Registered taxpayers"
-            icon={Building2}
-            variant="primary"
-          />
-          <StatsCard
-            title="Total Due Amount"
-            value={formatCurrency(stats.totalDueAmount)}
-            subtitle="Pending collection"
-            icon={IndianRupee}
-            trend={{ value: 12.5, isPositive: false }}
-          />
-          <StatsCard
-            title="Expected Recovery"
-            value={formatCurrency(stats.expectedRecovery)}
-            subtitle="AI predicted"
-            icon={TrendingUp}
-            variant="accent"
-          />
-          <StatsCard
-            title="High Risk Cases"
-            value={stats.riskDistribution.high}
-            subtitle={`${((stats.riskDistribution.high / stats.totalProperties) * 100).toFixed(1)}% of total`}
-            icon={AlertTriangle}
-            variant="destructive"
-          />
+          {statsLoading ? (
+            <>
+              <Skeleton className="h-[140px]" />
+              <Skeleton className="h-[140px]" />
+              <Skeleton className="h-[140px]" />
+              <Skeleton className="h-[140px]" />
+            </>
+          ) : (
+            <>
+              <StatsCard
+                title="Total Taxpayers"
+                value={stats?.totalTaxpayers.toLocaleString() || '0'}
+                subtitle="Registered taxpayers"
+                icon={Users}
+                variant="primary"
+              />
+              <StatsCard
+                title="High Risk"
+                value={stats?.highRiskCount.toString() || '0'}
+                subtitle="Immediate attention required"
+                icon={AlertTriangle}
+                variant="destructive"
+              />
+              <StatsCard
+                title="Medium Risk"
+                value={stats?.mediumRiskCount.toString() || '0'}
+                subtitle="Monitor closely"
+                icon={AlertCircle}
+                variant="accent"
+              />
+              <StatsCard
+                title="Low Risk"
+                value={stats?.lowRiskCount.toString() || '0'}
+                subtitle="Good standing"
+                icon={CheckCircle}
+                variant="success"
+              />
+            </>
+          )}
         </div>
 
-        {/* Charts Row */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <PieChart className="h-5 w-5 text-primary" />
-                Risk Distribution
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RiskDistributionChart data={stats.riskDistribution} />
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Arrears Trend
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ArrearsTrendChart data={stats.arrearsTrend} />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Additional Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatsCard
-            title="Nudges Sent"
-            value={stats.nudgesSent.toLocaleString()}
-            subtitle="This month"
-            icon={Send}
-          />
-          <StatsCard
-            title="Response Rate"
-            value={`${stats.responseRate}%`}
-            subtitle="Payment after reminder"
-            icon={Users}
-            variant="success"
-          />
-          <StatsCard
-            title="ML Accuracy"
-            value="91.2%"
-            subtitle="Prediction accuracy"
-            icon={TrendingUp}
-            variant="accent"
-          />
-        </div>
+        {/* Risk Distribution Chart */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <PieChart className="h-5 w-5 text-primary" />
+              Risk Distribution
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {statsLoading ? (
+              <Skeleton className="h-[300px]" />
+            ) : (
+              <RiskDistributionChart data={riskDistributionData} />
+            )}
+          </CardContent>
+        </Card>
 
         {/* Taxpayer Table Section */}
         <Card className="shadow-card">
@@ -132,8 +124,9 @@ export default function Index() {
             <CardTitle className="text-lg">Taxpayer Records</CardTitle>
           </CardHeader>
           <CardContent>
-            <TaxpayerTable
-              taxpayers={mockTaxpayers}
+            <TaxpayerTableLive
+              taxpayers={taxpayers || []}
+              isLoading={taxpayersLoading}
               onSelectTaxpayer={setSelectedTaxpayer}
             />
           </CardContent>
@@ -142,7 +135,7 @@ export default function Index() {
 
       {/* Taxpayer Profile Slide-over */}
       {selectedTaxpayer && (
-        <TaxpayerProfile
+        <TaxpayerProfileLive
           taxpayer={selectedTaxpayer}
           onClose={() => setSelectedTaxpayer(null)}
         />
