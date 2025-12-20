@@ -1,4 +1,5 @@
-import { useLocalTaxpayers, useLocalDashboardStats, useNudgeState } from '@/hooks/useLocalTaxpayers';
+import { useLocalTaxpayers, useLocalDashboardStats } from '@/hooks/useLocalTaxpayers';
+import { useMessagingIntegration } from '@/hooks/useMessagingIntegration';
 import { LocalKPICards } from '@/components/LocalKPICards';
 import { LocalRiskChart } from '@/components/LocalRiskChart';
 import { LocalTaxpayerTable } from '@/components/LocalTaxpayerTable';
@@ -10,18 +11,19 @@ import { NudgeHistoryTable } from '@/components/NudgeHistoryTable';
 import { AdminPanel } from '@/components/AdminPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain, MessageSquare, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain, MessageSquare, ShieldCheck, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
 
 export default function LocalDashboard() {
   const { data: taxpayers } = useLocalTaxpayers();
   const { data: stats } = useLocalDashboardStats();
-  const { getNudgeHistory } = useNudgeState();
+  const { getAllNudgeStates, providerInfo } = useMessagingIntegration();
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRoles();
-  const nudgeHistory = getNudgeHistory();
+  const nudgeCount = getAllNudgeStates().length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,6 +40,11 @@ export default function LocalDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Provider Badge */}
+              <Badge variant="outline" className="hidden sm:flex items-center gap-1 font-mono text-xs">
+                <Settings className="h-3 w-3" />
+                {providerInfo.provider.toUpperCase()}
+              </Badge>
               <span className="text-sm text-muted-foreground hidden sm:inline">
                 {user?.email}
               </span>
@@ -71,7 +78,7 @@ export default function LocalDashboard() {
             </TabsTrigger>
             <TabsTrigger value="nudge-history" className="gap-2">
               <MessageSquare className="h-4 w-4 hidden sm:inline" />
-              Nudges {nudgeHistory.length > 0 && `(${nudgeHistory.length})`}
+              Nudges {nudgeCount > 0 && `(${nudgeCount})`}
             </TabsTrigger>
             <TabsTrigger value="explainability" className="gap-2">
               <Brain className="h-4 w-4 hidden sm:inline" />
@@ -133,20 +140,33 @@ export default function LocalDashboard() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg font-semibold">Behavioral Communication</CardTitle>
+                  <CardTitle className="text-lg font-semibold">Integration Layer Status</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="p-3 border rounded-lg bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">Messaging Provider</p>
+                      <Badge variant="outline" className="font-mono">
+                        {providerInfo.provider.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {providerInfo.provider === 'mock' 
+                        ? 'Mock gateway active - messages are simulated'
+                        : 'Twilio gateway active - real SMS delivery enabled'}
+                    </p>
+                  </div>
                   <div className="p-3 border-l-4 border-l-destructive bg-destructive/5 rounded-r-lg">
-                    <p className="text-sm font-medium text-destructive">High Risk ({stats.highRiskCount})</p>
-                    <p className="text-xs text-muted-foreground">Early & firm reminders for immediate payment</p>
+                    <p className="text-sm font-medium text-destructive">High Risk → WhatsApp (urgent)</p>
+                    <p className="text-xs text-muted-foreground">Fallback to SMS if WhatsApp unavailable</p>
                   </div>
                   <div className="p-3 border-l-4 border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20 rounded-r-lg">
-                    <p className="text-sm font-medium text-yellow-600">Medium Risk ({stats.mediumRiskCount})</p>
-                    <p className="text-xs text-muted-foreground">Deadline-focused reminders to prevent late payment</p>
+                    <p className="text-sm font-medium text-yellow-600">Medium Risk → SMS (normal)</p>
+                    <p className="text-xs text-muted-foreground">Standard deadline reminders</p>
                   </div>
                   <div className="p-3 border-l-4 border-l-green-500 bg-green-50 dark:bg-green-950/20 rounded-r-lg">
-                    <p className="text-sm font-medium text-green-600">Low Risk ({stats.lowRiskCount})</p>
-                    <p className="text-xs text-muted-foreground">Polite informational nudges for continued compliance</p>
+                    <p className="text-sm font-medium text-green-600">Low Risk → SMS (low priority)</p>
+                    <p className="text-xs text-muted-foreground">Informational nudges</p>
                   </div>
                 </CardContent>
               </Card>
@@ -172,7 +192,7 @@ export default function LocalDashboard() {
 
           {/* Nudge History Tab */}
           <TabsContent value="nudge-history" className="space-y-6">
-            <NudgeHistoryTable nudges={nudgeHistory} />
+            <NudgeHistoryTable />
           </TabsContent>
 
           {/* Explainability Tab */}

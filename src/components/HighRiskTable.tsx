@@ -10,10 +10,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Send, CheckCircle, AlertTriangle } from 'lucide-react';
-import { LocalTaxpayer, useNudgeState, TAX_TYPE_MAP } from '@/hooks/useLocalTaxpayers';
+import { Send, CheckCircle, AlertTriangle, Loader2, Phone, MessageSquare, Zap } from 'lucide-react';
+import { LocalTaxpayer, TAX_TYPE_MAP } from '@/hooks/useLocalTaxpayers';
 import { LocalNudgeModal } from './LocalNudgeModal';
 import { useUserRoles } from '@/hooks/useUserRoles';
+import { useMessagingIntegration } from '@/hooks/useMessagingIntegration';
 import { toast } from 'sonner';
 
 interface HighRiskTableProps {
@@ -22,8 +23,15 @@ interface HighRiskTableProps {
 
 export function HighRiskTable({ taxpayers }: HighRiskTableProps) {
   const [selectedTaxpayer, setSelectedTaxpayer] = useState<LocalTaxpayer | null>(null);
-  const { sendNudge, isNudgeSent } = useNudgeState();
   const { isAdmin } = useUserRoles();
+  const { 
+    isNudgeSent, 
+    getNudgeState, 
+    providerInfo,
+    sendHighRiskNudges,
+    isSending,
+    batchProgress,
+  } = useMessagingIntegration();
 
   // Filter only high-risk taxpayers, sorted by risk probability
   const highRiskTaxpayers = useMemo(() => {
@@ -33,10 +41,29 @@ export function HighRiskTable({ taxpayers }: HighRiskTableProps) {
       .slice(0, 20); // Top 20 high-risk
   }, [taxpayers]);
 
-  const handleNudgeConfirm = (message: string) => {
-    if (selectedTaxpayer) {
-      sendNudge(selectedTaxpayer.taxpayer_id, selectedTaxpayer.riskLevel, message);
-      toast.success(`Early reminder sent to ${selectedTaxpayer.taxpayer_id}`);
+  // Count unsent nudges
+  const unsentCount = useMemo(() => {
+    return highRiskTaxpayers.filter(tp => !isNudgeSent(tp.taxpayer_id)).length;
+  }, [highRiskTaxpayers, isNudgeSent]);
+
+  const handleBatchSend = async () => {
+    const unsent = highRiskTaxpayers.filter(tp => !isNudgeSent(tp.taxpayer_id));
+    if (unsent.length === 0) {
+      toast.info('All high-risk taxpayers have already been notified');
+      return;
+    }
+
+    toast.info(`Sending nudges to ${unsent.length} high-risk taxpayers...`);
+    const results = await sendHighRiskNudges(taxpayers);
+    
+    const successful = results.filter(r => r.status === 'sent' || r.status === 'delivered').length;
+    const failed = results.length - successful;
+    
+    if (successful > 0) {
+      toast.success(`Successfully sent ${successful} nudges`);
+    }
+    if (failed > 0) {
+      toast.error(`Failed to send ${failed} nudges`);
     }
   };
 
@@ -47,16 +74,81 @@ export function HighRiskTable({ taxpayers }: HighRiskTableProps) {
     return `₹${Math.round(scaled)}`;
   };
 
+  const getNudgeStatusDisplay = (taxpayerId: string) => {
+    const state = getNudgeState(taxpayerId);
+    if (!state) return null;
+
+    if (state.status === 'pending') {
+      return (
+        <Button variant="ghost" size="sm" disabled>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Sending...
+        </Button>
+      );
+    }
+
+    if (state.status === 'sent' && state.result) {
+      return (
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" disabled>
+            <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+            Sent
+          </Button>
+          <Badge variant="outline" className="text-xs">
+            {state.result.channel === 'whatsapp' ? (
+              <MessageSquare className="h-3 w-3 mr-1" />
+            ) : (
+              <Phone className="h-3 w-3 mr-1" />
+            )}
+            {state.result.provider}
+          </Badge>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-destructive" />
-          <div>
-            <CardTitle className="text-lg font-semibold">High Risk Taxpayers</CardTitle>
-            <CardDescription>Priority list for targeted enforcement and early intervention</CardDescription>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <div>
+              <CardTitle className="text-lg font-semibold">High Risk Taxpayers</CardTitle>
+              <CardDescription>Priority list for targeted enforcement and early intervention</CardDescription>
+            </div>
           </div>
+          {isAdmin && unsentCount > 0 && (
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={handleBatchSend}
+              disabled={isSending}
+            >
+              {isSending && batchProgress ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {batchProgress.completed}/{batchProgress.total}
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Auto-Send All ({unsentCount})
+                </>
+              )}
+            </Button>
+          )}
         </div>
+        {isAdmin && (
+          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+            <span>Provider:</span>
+            <Badge variant="outline" className="font-mono">
+              {providerInfo.provider.toUpperCase()}
+            </Badge>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="rounded-lg border overflow-hidden">
@@ -101,15 +193,15 @@ export function HighRiskTable({ taxpayers }: HighRiskTableProps) {
                     {isAdmin && (
                       <TableCell className="text-right">
                         {isNudgeSent(tp.taxpayer_id) ? (
-                          <Button variant="ghost" size="sm" disabled>
-                            <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                            Sent
-                          </Button>
+                          getNudgeStatusDisplay(tp.taxpayer_id)
+                        ) : getNudgeState(tp.taxpayer_id)?.status === 'pending' ? (
+                          getNudgeStatusDisplay(tp.taxpayer_id)
                         ) : (
                           <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => setSelectedTaxpayer(tp)}
+                            disabled={isSending}
                           >
                             <Send className="mr-2 h-4 w-4" />
                             Send Alert
@@ -132,9 +224,7 @@ export function HighRiskTable({ taxpayers }: HighRiskTableProps) {
           <LocalNudgeModal
             isOpen={!!selectedTaxpayer}
             onClose={() => setSelectedTaxpayer(null)}
-            taxpayerId={selectedTaxpayer.taxpayer_id}
-            riskLevel={selectedTaxpayer.riskLevel}
-            onConfirm={handleNudgeConfirm}
+            taxpayer={selectedTaxpayer}
           />
         )}
       </CardContent>
