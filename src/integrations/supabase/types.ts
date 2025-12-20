@@ -14,16 +14,283 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      nudges: {
+        Row: {
+          created_at: string
+          created_by: string
+          delivered_at: string | null
+          id: string
+          message: string
+          nudge_type: Database["public"]["Enums"]["nudge_type"]
+          response_date: string | null
+          response_received: boolean | null
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          sent_at: string | null
+          status: Database["public"]["Enums"]["nudge_status"]
+          taxpayer_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          delivered_at?: string | null
+          id?: string
+          message: string
+          nudge_type: Database["public"]["Enums"]["nudge_type"]
+          response_date?: string | null
+          response_received?: boolean | null
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["nudge_status"]
+          taxpayer_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          delivered_at?: string | null
+          id?: string
+          message?: string
+          nudge_type?: Database["public"]["Enums"]["nudge_type"]
+          response_date?: string | null
+          response_received?: boolean | null
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["nudge_status"]
+          taxpayer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nudges_taxpayer_id_fkey"
+            columns: ["taxpayer_id"]
+            isOneToOne: false
+            referencedRelation: "taxpayers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          department: string | null
+          designation: string | null
+          email: string
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string
+          ward_assigned: string | null
+          zone_assigned: string | null
+        }
+        Insert: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email: string
+          full_name: string
+          id: string
+          phone?: string | null
+          updated_at?: string
+          ward_assigned?: string | null
+          zone_assigned?: string | null
+        }
+        Update: {
+          created_at?: string
+          department?: string | null
+          designation?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          ward_assigned?: string | null
+          zone_assigned?: string | null
+        }
+        Relationships: []
+      }
+      risk_scores: {
+        Row: {
+          behavior_segment: Database["public"]["Enums"]["behavior_segment"]
+          calculated_at: string
+          created_by: string | null
+          id: string
+          model_version: string
+          risk_factors: Json
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          risk_score: number
+          taxpayer_id: string
+        }
+        Insert: {
+          behavior_segment: Database["public"]["Enums"]["behavior_segment"]
+          calculated_at?: string
+          created_by?: string | null
+          id?: string
+          model_version?: string
+          risk_factors?: Json
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          risk_score: number
+          taxpayer_id: string
+        }
+        Update: {
+          behavior_segment?: Database["public"]["Enums"]["behavior_segment"]
+          calculated_at?: string
+          created_by?: string | null
+          id?: string
+          model_version?: string
+          risk_factors?: Json
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          risk_score?: number
+          taxpayer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_scores_taxpayer_id_fkey"
+            columns: ["taxpayer_id"]
+            isOneToOne: false
+            referencedRelation: "taxpayers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tax_records: {
+        Row: {
+          arrears_amount: number
+          created_at: string
+          delay_days: number
+          due_amount: number
+          financial_year: string
+          id: string
+          paid_amount: number
+          payment_date: string | null
+          penalty_amount: number
+          status: string
+          taxpayer_id: string
+          updated_at: string
+        }
+        Insert: {
+          arrears_amount?: number
+          created_at?: string
+          delay_days?: number
+          due_amount?: number
+          financial_year: string
+          id?: string
+          paid_amount?: number
+          payment_date?: string | null
+          penalty_amount?: number
+          status?: string
+          taxpayer_id: string
+          updated_at?: string
+        }
+        Update: {
+          arrears_amount?: number
+          created_at?: string
+          delay_days?: number
+          due_amount?: number
+          financial_year?: string
+          id?: string
+          paid_amount?: number
+          payment_date?: string | null
+          penalty_amount?: number
+          status?: string
+          taxpayer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tax_records_taxpayer_id_fkey"
+            columns: ["taxpayer_id"]
+            isOneToOne: false
+            referencedRelation: "taxpayers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      taxpayers: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          property_address: string
+          tax_type: Database["public"]["Enums"]["tax_type"]
+          updated_at: string
+          ward: string
+          zone: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          name: string
+          phone?: string | null
+          property_address: string
+          tax_type?: Database["public"]["Enums"]["tax_type"]
+          updated_at?: string
+          ward: string
+          zone: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          property_address?: string
+          tax_type?: Database["public"]["Enums"]["tax_type"]
+          updated_at?: string
+          ward?: string
+          zone?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["officer_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["officer_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["officer_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["officer_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_officer: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      behavior_segment:
+        | "Regular Payer"
+        | "Occasional Defaulter"
+        | "Chronic Defaulter"
+        | "First-time Defaulter"
+      nudge_status: "pending" | "sent" | "delivered" | "failed"
+      nudge_type: "sms" | "whatsapp" | "email"
+      officer_role: "admin" | "supervisor" | "officer"
+      risk_level: "low" | "medium" | "high"
+      tax_type: "Property Tax" | "Water Tax" | "Drainage Tax" | "Commercial Tax"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +417,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      behavior_segment: [
+        "Regular Payer",
+        "Occasional Defaulter",
+        "Chronic Defaulter",
+        "First-time Defaulter",
+      ],
+      nudge_status: ["pending", "sent", "delivered", "failed"],
+      nudge_type: ["sms", "whatsapp", "email"],
+      officer_role: ["admin", "supervisor", "officer"],
+      risk_level: ["low", "medium", "high"],
+      tax_type: ["Property Tax", "Water Tax", "Drainage Tax", "Commercial Tax"],
+    },
   },
 } as const
