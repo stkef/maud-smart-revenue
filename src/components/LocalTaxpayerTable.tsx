@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Search, Send, CheckCircle } from 'lucide-react';
-import { LocalTaxpayer, RiskLevel, useNudgeState } from '@/hooks/useLocalTaxpayers';
+import { LocalTaxpayer, RiskLevel, useNudgeState, TAX_TYPE_MAP } from '@/hooks/useLocalTaxpayers';
 import { LocalNudgeModal } from './LocalNudgeModal';
 import { toast } from 'sonner';
 
@@ -40,11 +40,12 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
 
   const filteredTaxpayers = useMemo(() => {
     return taxpayers.filter((tp) => {
+      const taxTypeLabel = TAX_TYPE_MAP[tp.tax_type] || '';
       const matchesSearch =
         tp.taxpayer_id.toLowerCase().includes(search.toLowerCase()) ||
-        tp.ward.toLowerCase().includes(search.toLowerCase()) ||
-        tp.zone.toLowerCase().includes(search.toLowerCase()) ||
-        tp.tax_type.toLowerCase().includes(search.toLowerCase());
+        `Ward ${tp.ward}`.toLowerCase().includes(search.toLowerCase()) ||
+        `Zone ${tp.zone}`.toLowerCase().includes(search.toLowerCase()) ||
+        taxTypeLabel.toLowerCase().includes(search.toLowerCase());
 
       const matchesRisk = riskFilter === 'all' || tp.riskLevel === riskFilter;
 
@@ -92,6 +93,7 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
               <TableHead className="font-semibold">Ward</TableHead>
               <TableHead className="font-semibold">Zone</TableHead>
               <TableHead className="font-semibold">Tax Type</TableHead>
+              <TableHead className="font-semibold">Risk Score</TableHead>
               <TableHead className="font-semibold">Risk Level</TableHead>
               <TableHead className="font-semibold text-right">Action</TableHead>
             </TableRow>
@@ -99,7 +101,7 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
           <TableBody>
             {filteredTaxpayers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   No taxpayers found
                 </TableCell>
               </TableRow>
@@ -107,9 +109,14 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
               filteredTaxpayers.map((tp) => (
                 <TableRow key={tp.taxpayer_id} className="hover:bg-muted/30">
                   <TableCell className="font-medium">{tp.taxpayer_id}</TableCell>
-                  <TableCell>{tp.ward}</TableCell>
-                  <TableCell>{tp.zone}</TableCell>
-                  <TableCell>{tp.tax_type}</TableCell>
+                  <TableCell>Ward {tp.ward}</TableCell>
+                  <TableCell>Zone {tp.zone}</TableCell>
+                  <TableCell>{TAX_TYPE_MAP[tp.tax_type] || `Type ${tp.tax_type}`}</TableCell>
+                  <TableCell>
+                    <span className="font-mono text-sm">
+                      {(tp.default_risk_probability * 100).toFixed(1)}%
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <Badge className={riskColors[tp.riskLevel]}>
                       {tp.riskLevel.charAt(0).toUpperCase() + tp.riskLevel.slice(1)}
