@@ -7,17 +7,20 @@ import { ArrearsRecoveryChart } from '@/components/ArrearsRecoveryChart';
 import { RiskFactorsPanel } from '@/components/RiskFactorsPanel';
 import { HighRiskTable } from '@/components/HighRiskTable';
 import { NudgeHistoryTable } from '@/components/NudgeHistoryTable';
+import { AdminPanel } from '@/components/AdminPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain, MessageSquare, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRoles } from '@/hooks/useUserRoles';
 
 export default function LocalDashboard() {
   const { data: taxpayers } = useLocalTaxpayers();
   const { data: stats } = useLocalDashboardStats();
   const { getNudgeHistory } = useNudgeState();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRoles();
   const nudgeHistory = getNudgeHistory();
 
   return (
@@ -53,7 +56,7 @@ export default function LocalDashboard() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'} lg:w-auto lg:inline-grid`}>
             <TabsTrigger value="overview" className="gap-2">
               <BarChart3 className="h-4 w-4 hidden sm:inline" />
               Overview
@@ -74,6 +77,12 @@ export default function LocalDashboard() {
               <Brain className="h-4 w-4 hidden sm:inline" />
               Insights
             </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="admin" className="gap-2">
+                <ShieldCheck className="h-4 w-4 hidden sm:inline" />
+                Admin
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Overview Tab */}
@@ -217,6 +226,13 @@ export default function LocalDashboard() {
               </Card>
             </div>
           </TabsContent>
+
+          {/* Admin Tab */}
+          {isAdmin && (
+            <TabsContent value="admin" className="space-y-6">
+              <AdminPanel />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
