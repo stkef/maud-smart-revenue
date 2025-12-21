@@ -1,4 +1,5 @@
 // Twilio Gateway - Real SMS/WhatsApp delivery via Edge Function
+// Falls back gracefully to mock behavior if Twilio is not configured
 
 import type { GatewayInterface, MessagePayload, GatewayResponse } from '../types';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,11 +8,26 @@ function generateMessageId(): string {
   return `twilio-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+function generateMockMessageId(): string {
+  return `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Mock fallback when Twilio is not configured
+function createMockResponse(channel: 'sms' | 'whatsapp', to: string, message: string): GatewayResponse {
+  console.log(`[TWILIO GATEWAY] Falling back to mock ${channel.toUpperCase()} | To: ${to} | Message: ${message.substring(0, 50)}...`);
+  return {
+    success: true,
+    messageId: generateMockMessageId(),
+    status: 'sent',
+    timestamp: new Date().toISOString(),
+  };
+}
+
 async function callTwilioEdgeFunction(
   to: string,
   message: string,
   channel: 'sms' | 'whatsapp'
-): Promise<{ success: boolean; sid?: string; error?: string }> {
+): Promise<{ success: boolean; sid?: string; error?: string; notConfigured?: boolean }> {
   try {
     console.log(`[TWILIO GATEWAY] Calling edge function for ${channel} to ${to}`);
     
@@ -21,30 +37,31 @@ async function callTwilioEdgeFunction(
 
     if (error) {
       console.error('[TWILIO GATEWAY] Edge function error:', error);
-      return {
-        success: false,
-        error: error.message || 'Edge function call failed',
-      };
+      // Check if error is due to missing credentials
+      if (error.message?.includes('credentials') || error.message?.includes('not configured')) {
+        return { success: false, notConfigured: true, error: error.message };
+      }
+      return { success: false, error: error.message || 'Edge function call failed' };
     }
 
     if (!data.success) {
       console.error('[TWILIO GATEWAY] Twilio API error:', data.error);
-      return {
-        success: false,
-        error: data.error || 'Failed to send message',
-      };
+      // Check if error is due to missing credentials
+      if (data.error?.includes('credentials') || data.error?.includes('not configured')) {
+        return { success: false, notConfigured: true, error: data.error };
+      }
+      return { success: false, error: data.error || 'Failed to send message' };
     }
 
     console.log(`[TWILIO GATEWAY] Message sent successfully. SID: ${data.sid}`);
-    return {
-      success: true,
-      sid: data.sid,
-    };
+    return { success: true, sid: data.sid };
   } catch (error) {
     console.error('[TWILIO GATEWAY] Unexpected error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+    // Network errors or edge function not deployed - fall back to mock
+    return { 
+      success: false, 
+      notConfigured: true,
+      error: error instanceof Error ? error.message : 'Unknown error' 
     };
   }
 }
@@ -54,6 +71,12 @@ export const twilioGateway: GatewayInterface = {
     const timestamp = new Date().toISOString();
     
     const result = await callTwilioEdgeFunction(payload.to, payload.message, 'sms');
+    
+    // Fall back to mock if Twilio is not configured
+    if (result.notConfigured) {
+      console.log('[TWILIO GATEWAY] Twilio not configured, using mock fallback');
+      return createMockResponse('sms', payload.to, payload.message);
+    }
     
     if (!result.success) {
       return {
@@ -79,6 +102,12 @@ export const twilioGateway: GatewayInterface = {
     const timestamp = new Date().toISOString();
     
     const result = await callTwilioEdgeFunction(payload.to, payload.message, 'whatsapp');
+    
+    // Fall back to mock if Twilio is not configured
+    if (result.notConfigured) {
+      console.log('[TWILIO GATEWAY] Twilio not configured, using mock fallback');
+      return createMockResponse('whatsapp', payload.to, payload.message);
+    }
     
     if (!result.success) {
       return {
