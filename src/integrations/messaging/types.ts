@@ -8,6 +8,8 @@ export type MessagePriority = 'low' | 'normal' | 'urgent';
 
 export interface TaxpayerData {
   taxpayer_id: string;
+  name?: string;
+  phone?: string;
   ward: number;
   zone: number;
   tax_type: number;

@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Send, CheckCircle, MessageSquare, Phone, Mail } from 'lucide-react';
+import { Send, CheckCircle, MessageSquare, Phone, AlertCircle } from 'lucide-react';
 import { RiskLevel, LocalTaxpayer } from '@/hooks/useLocalTaxpayers';
 import { useMessagingIntegration } from '@/hooks/useMessagingIntegration';
 import { makeDecision, type Channel } from '@/integrations/messaging';
@@ -50,10 +51,12 @@ export function LocalNudgeModal({
   const { sendNudge, providerInfo } = useMessagingIntegration();
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState(taxpayer.phone || '');
   const [lastResult, setLastResult] = useState<{
     channel: Channel;
     provider: string;
     status: string;
+    error?: string;
   } | null>(null);
 
   // Get decision from decision engine
@@ -75,19 +78,28 @@ export function LocalNudgeModal({
   useEffect(() => {
     setMessage(decision.message);
     setChannel(decision.channel);
+    setPhoneNumber(taxpayer.phone || '');
     setIsSent(false);
     setLastResult(null);
-  }, [taxpayer.taxpayer_id, decision.message, decision.channel]);
+  }, [taxpayer.taxpayer_id, decision.message, decision.channel, taxpayer.phone]);
 
   const handleConfirm = async () => {
+    if (!phoneNumber) {
+      toast.error('Phone number is required for Twilio');
+      return;
+    }
+
     setIsSending(true);
     try {
-      const result = await sendNudge(taxpayer, message, channel);
+      // Create a modified taxpayer with the phone number
+      const taxpayerWithPhone = { ...taxpayer, phone: phoneNumber };
+      const result = await sendNudge(taxpayerWithPhone, message, channel);
       
       setLastResult({
         channel: result.channel,
         provider: result.provider,
         status: result.status,
+        error: result.error,
       });
 
       if (result.status === 'sent' || result.status === 'delivered') {
@@ -106,7 +118,8 @@ export function LocalNudgeModal({
         });
       }
     } catch (error) {
-      toast.error('Failed to send nudge');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error('Failed to send nudge', { description: errorMessage });
     } finally {
       setIsSending(false);
     }
@@ -158,7 +171,24 @@ export function LocalNudgeModal({
             </Badge>
           </div>
 
-          {/* Channel Selection */}
+          {/* Phone Number Input */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Phone Number</label>
+            <Input
+              type="tel"
+              placeholder="+1234567890 (E.164 format)"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              disabled={isSending || isSent}
+            />
+            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <AlertCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <span>
+                Enter the recipient's phone number in E.164 format (e.g., +919876543210 for India).
+                {providerInfo.provider === 'twilio' && ' This will send a real message via Twilio.'}
+              </span>
+            </div>
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Communication Channel</label>
             <Select 

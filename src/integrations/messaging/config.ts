@@ -2,17 +2,11 @@
 
 export interface MessagingConfig {
   useTwilio: boolean;
-  twilioAccountSid?: string;
-  twilioAuthToken?: string;
-  twilioPhoneNumber?: string;
-  twilioWhatsAppNumber?: string;
-  verifiedNumbers?: string[];
 }
 
-// Default configuration - uses mock gateway
+// Default configuration - use Twilio when secrets are configured
 const defaultConfig: MessagingConfig = {
-  useTwilio: false,
-  verifiedNumbers: [],
+  useTwilio: true, // Enable Twilio by default (will check if secrets exist via edge function)
 };
 
 let currentConfig: MessagingConfig = { ...defaultConfig };
@@ -29,13 +23,7 @@ export function resetMessagingConfig(): void {
   currentConfig = { ...defaultConfig };
 }
 
-// Check if Twilio is properly configured
+// Check if Twilio is configured (always returns true now since edge function handles validation)
 export function isTwilioConfigured(): boolean {
-  const config = getMessagingConfig();
-  return !!(
-    config.useTwilio &&
-    config.twilioAccountSid &&
-    config.twilioAuthToken &&
-    config.twilioPhoneNumber
-  );
+  return currentConfig.useTwilio;
 }
