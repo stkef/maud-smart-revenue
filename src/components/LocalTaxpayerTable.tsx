@@ -17,9 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search, Send, CheckCircle, Loader2, Phone, MessageSquare } from 'lucide-react';
+import { Search, Send, CheckCircle, Loader2, Phone, MessageSquare, Eye } from 'lucide-react';
 import { LocalTaxpayer, RiskLevel, TAX_TYPE_MAP } from '@/hooks/useLocalTaxpayers';
 import { LocalNudgeModal } from './LocalNudgeModal';
+import { TaxpayerDetailModal } from './TaxpayerDetailModal';
 import { useUserRoles } from '@/hooks/useUserRoles';
 import { useMessagingIntegration } from '@/hooks/useMessagingIntegration';
 
@@ -37,6 +38,7 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState<string>('all');
   const [selectedTaxpayer, setSelectedTaxpayer] = useState<LocalTaxpayer | null>(null);
+  const [detailTaxpayer, setDetailTaxpayer] = useState<LocalTaxpayer | null>(null);
   const { isAdmin } = useUserRoles();
   const { isNudgeSent, getNudgeState, providerInfo } = useMessagingIntegration();
 
@@ -167,7 +169,15 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
             ) : (
               filteredTaxpayers.map((tp) => (
                 <TableRow key={tp.taxpayer_id} className="hover:bg-muted/30">
-                  <TableCell className="font-medium">{tp.taxpayer_id}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="link"
+                      className="p-0 h-auto font-medium text-primary hover:underline"
+                      onClick={() => setDetailTaxpayer(tp)}
+                    >
+                      {tp.taxpayer_id}
+                    </Button>
+                  </TableCell>
                   <TableCell>Ward {tp.ward}</TableCell>
                   <TableCell>Zone {tp.zone}</TableCell>
                   <TableCell>{TAX_TYPE_MAP[tp.tax_type] || `Type ${tp.tax_type}`}</TableCell>
@@ -217,6 +227,17 @@ export function LocalTaxpayerTable({ taxpayers }: LocalTaxpayerTableProps) {
           taxpayer={selectedTaxpayer}
         />
       )}
+
+      {/* Taxpayer Detail Modal */}
+      <TaxpayerDetailModal
+        isOpen={!!detailTaxpayer}
+        onClose={() => setDetailTaxpayer(null)}
+        taxpayer={detailTaxpayer}
+        onSendNudge={(tp) => {
+          setDetailTaxpayer(null);
+          setSelectedTaxpayer(tp);
+        }}
+      />
     </div>
   );
 }
