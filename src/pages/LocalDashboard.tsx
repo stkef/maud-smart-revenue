@@ -13,7 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain, MessageSquare, ShieldCheck, Settings } from 'lucide-react';
+import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain, MessageSquare, ShieldCheck, Settings, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
 
@@ -40,6 +41,13 @@ export default function LocalDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {/* Citizen Portal Link */}
+              <Link to="/risk-lookup">
+                <Button variant="outline" size="sm" className="hidden sm:flex">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Citizen Portal
+                </Button>
+              </Link>
               {/* Provider Badge */}
               <Badge variant="outline" className="hidden sm:flex items-center gap-1 font-mono text-xs">
                 <Settings className="h-3 w-3" />

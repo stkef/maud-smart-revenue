@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LocalDashboard from "./pages/LocalDashboard";
 import Auth from "./pages/Auth";
+import RiskLookup from "./pages/RiskLookup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/risk-lookup" element={<RiskLookup />} />
             <Route 
               path="/" 
               element={
