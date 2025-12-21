@@ -41,6 +41,8 @@ export function useMessagingIntegration() {
   // Convert LocalTaxpayer to TaxpayerData format
   const toTaxpayerData = useCallback((taxpayer: LocalTaxpayer): TaxpayerData => ({
     taxpayer_id: taxpayer.taxpayer_id,
+    name: taxpayer.name,
+    phone: taxpayer.phone,
     ward: taxpayer.ward,
     zone: taxpayer.zone,
     tax_type: taxpayer.tax_type,

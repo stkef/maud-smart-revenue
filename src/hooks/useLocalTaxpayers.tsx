@@ -31,6 +31,8 @@ export const PAYMENT_MODE_MAP: Record<number, string> = {
 
 export interface LocalTaxpayer {
   taxpayer_id: string;
+  name?: string;
+  phone?: string;
   ward: number;
   zone: number;
   property_type: number;

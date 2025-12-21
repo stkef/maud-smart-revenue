@@ -43,12 +43,16 @@ export async function sendNotification(
   const channel = forceChannel || decision.channel;
   const message = customMessage || decision.message;
   
+  // Use phone number for actual delivery, fall back to taxpayer_id for mock/demo
+  const phoneNumber = taxpayer.phone || taxpayer.taxpayer_id;
+  
   const payload: MessagePayload = {
-    to: taxpayer.taxpayer_id, // Only pass identifier, not sensitive data
+    to: phoneNumber,
     message,
     channel,
     priority: decision.priority,
     metadata: {
+      taxpayerId: taxpayer.taxpayer_id,
       ward: taxpayer.ward,
       zone: taxpayer.zone,
       riskCategory: taxpayer.risk_category,

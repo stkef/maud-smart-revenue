@@ -1,1 +1,4 @@
 project_id = "azfuyhoxzwqxhxovyatv"
+
+[functions.send-twilio-message]
+verify_jwt = false
