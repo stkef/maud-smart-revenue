@@ -42,7 +42,14 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[TWILIO] Sending ${channel} message to ${to}`);
+    // Auto-format phone number with country code (default to India +91)
+    let formattedPhone = to.replace(/\s+/g, '').replace(/-/g, '');
+    if (!formattedPhone.startsWith('+')) {
+      // If no country code, prepend +91 (India)
+      formattedPhone = `+91${formattedPhone}`;
+    }
+
+    console.log(`[TWILIO] Sending ${channel} message to ${formattedPhone}`);
 
     let fromNumber: string;
     let toNumber: string;
@@ -56,10 +63,10 @@ serve(async (req) => {
         );
       }
       fromNumber = `whatsapp:${twilioWhatsAppNumber}`;
-      toNumber = `whatsapp:${to}`;
+      toNumber = `whatsapp:${formattedPhone}`;
     } else {
       fromNumber = twilioPhoneNumber;
-      toNumber = to;
+      toNumber = formattedPhone;
     }
 
     // Make the actual Twilio API call

@@ -5,16 +5,16 @@ import type { TaxpayerData, DecisionResult, RiskLevel, Channel, MessagePriority 
 // Message templates for different risk levels
 const MESSAGE_TEMPLATES = {
   high: {
-    urgent: `🚨 URGENT: Your tax payment is significantly overdue. Immediate action required to avoid penalties. Please clear your dues at the earliest. Contact: Tax Office`,
-    reminder: `Important: Your tax account shows high risk of default. Please prioritize payment to avoid legal action. Reference: {taxpayer_id}`,
+    urgent: `🚨 URGENT: Your {tax_type} payment is significantly overdue. Immediate action required to avoid penalties. Please clear your dues at the earliest. Contact: Tax Office. Ref: {taxpayer_id}`,
+    reminder: `Important: Your {tax_type} account shows high risk of default. Please prioritize payment to avoid legal action. Reference: {taxpayer_id}`,
   },
   medium: {
-    reminder: `Reminder: Your tax payment is pending. Please clear your dues soon to avoid late fees. Reference: {taxpayer_id}`,
-    notice: `Notice: A payment reminder for your tax account. Please ensure timely payment. Reference: {taxpayer_id}`,
+    reminder: `Reminder: Your {tax_type} payment is pending. Please clear your dues soon to avoid late fees. Reference: {taxpayer_id}`,
+    notice: `Notice: A payment reminder for your {tax_type} account. Please ensure timely payment. Reference: {taxpayer_id}`,
   },
   low: {
-    info: `Information: Thank you for being a regular taxpayer. Your next payment is due soon. Reference: {taxpayer_id}`,
-    appreciation: `Thank you for your timely tax payments. Keep up the good compliance! Reference: {taxpayer_id}`,
+    info: `Information: Thank you for being a regular taxpayer. Your next {tax_type} payment is due soon. Reference: {taxpayer_id}`,
+    appreciation: `Thank you for your timely {tax_type} payments. Keep up the good compliance! Reference: {taxpayer_id}`,
   },
 };
 
