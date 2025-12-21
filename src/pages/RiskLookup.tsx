@@ -151,19 +151,55 @@ export default function RiskLookup() {
                 <p className="text-sm text-muted-foreground mb-3">
                   <strong>Sample IDs for testing:</strong>
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {['TAX-133553', 'TAX-106113', 'TAX-100821'].map((id) => (
-                    <Button
-                      key={id}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSearchId(id);
-                      }}
-                    >
-                      {id}
-                    </Button>
-                  ))}
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Low Risk:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['TAX-133553', 'TAX-109427'].map((id) => (
+                        <Button
+                          key={id}
+                          variant="outline"
+                          size="sm"
+                          className="border-success/50 text-success hover:bg-success/10"
+                          onClick={() => setSearchId(id)}
+                        >
+                          {id}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Medium Risk:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['TAX-101414', 'TAX-129282'].map((id) => (
+                        <Button
+                          key={id}
+                          variant="outline"
+                          size="sm"
+                          className="border-warning/50 text-warning hover:bg-warning/10"
+                          onClick={() => setSearchId(id)}
+                        >
+                          {id}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">High Risk:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['TAX-106113', 'TAX-100821'].map((id) => (
+                        <Button
+                          key={id}
+                          variant="outline"
+                          size="sm"
+                          className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                          onClick={() => setSearchId(id)}
+                        >
+                          {id}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3">
                   Click any ID above to populate the search field
