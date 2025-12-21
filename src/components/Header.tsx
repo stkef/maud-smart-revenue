@@ -1,4 +1,4 @@
-import { Building2, Bell, User, LogOut } from 'lucide-react';
+import { Building2, Bell, User, LogOut, LayoutDashboard, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,18 +9,25 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export function Header() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignOut = async () => {
     await signOut();
     toast.success('Signed out successfully');
     navigate('/auth');
   };
+
+  const navItems = [
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/payments', label: 'Payments', icon: CreditCard },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -35,6 +42,25 @@ export function Header() {
               Government of Andhra Pradesh
             </p>
           </div>
+
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center gap-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                to={item.href}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  location.pathname === item.href
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
         <div className="flex items-center gap-2">

@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LocalDashboard from "./pages/LocalDashboard";
 import Auth from "./pages/Auth";
 import RiskLookup from "./pages/RiskLookup";
+import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,14 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/risk-lookup" element={<RiskLookup />} />
+            <Route 
+              path="/payments" 
+              element={
+                <ProtectedRoute>
+                  <Payments />
+                </ProtectedRoute>
+              } 
+            />
             <Route 
               path="/" 
               element={
