@@ -20,20 +20,16 @@ serve(async (req) => {
 
   try {
     // ============================================
-    // CREDENTIALS (from backend secrets)
+    // MANUAL CREDENTIALS (LOCAL ONLY)
+    // Replace these with your real Twilio values on your local machine.
     // ============================================
-    const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID") ?? "";
-    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN") ?? "";
-    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") ?? "";
-    const twilioWhatsAppNumber = Deno.env.get("TWILIO_WHATSAPP_NUMBER") ?? "";
+    const accountSid = "ACfc5e820604a6b86053bb9e346235bff9"; // must start with "AC"
+    const authToken = "78ea8603e6a54856ef9bf2dc0a2a8b2f"; // 32 characters
+    const twilioPhoneNumber = "+10000000000"; // e.g., +1234567890
+    const twilioWhatsAppNumber = "+14155238886"; // optional, e.g., +14155238886
     // ============================================
 
-    console.log("[TWILIO] Using secret-based credentials:", {
-      accountSidPrefix: accountSid ? `${accountSid.slice(0, 4)}…` : "(missing)",
-      authTokenLength: authToken ? authToken.length : 0,
-      hasPhoneNumber: !!twilioPhoneNumber,
-      hasWhatsAppNumber: !!twilioWhatsAppNumber,
-    });
+    console.log("[TWILIO] Using hardcoded local credentials placeholders");
 
     if (!accountSid || !authToken || !twilioPhoneNumber) {
       console.error("[TWILIO] Missing required credentials");
