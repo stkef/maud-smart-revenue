@@ -77,6 +77,7 @@ export async function sendNotification(
         status: fallbackResponse.status,
         timestamp: fallbackResponse.timestamp,
         messageId: fallbackResponse.messageId,
+        message,
         error: fallbackResponse.error,
       };
     }
@@ -88,6 +89,7 @@ export async function sendNotification(
       status: response.status,
       timestamp: response.timestamp,
       messageId: response.messageId,
+      message,
       error: response.error,
     };
   } catch (error) {
@@ -99,6 +101,7 @@ export async function sendNotification(
       status: 'failed',
       timestamp: new Date().toISOString(),
       messageId: '',
+      message,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
