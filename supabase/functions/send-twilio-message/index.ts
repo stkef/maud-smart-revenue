@@ -18,27 +18,38 @@ serve(async (req) => {
   }
 
   try {
-    // ✅ READ ENV VARIABLES CORRECTLY (THIS FIXES 20003)
     const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
     const smsFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
     const whatsappFrom = Deno.env.get("TWILIO_WHATSAPP_NUMBER");
 
+    // Debug logging
+    console.log("[TWILIO] Checking credentials...");
+    console.log("[TWILIO] Account SID present:", !!accountSid, accountSid ? `starts with: ${accountSid.substring(0, 4)}` : "missing");
+    console.log("[TWILIO] Auth Token present:", !!authToken, authToken ? `length: ${authToken.length}` : "missing");
+    console.log("[TWILIO] SMS From:", smsFrom || "missing");
+
     if (!accountSid || !authToken || !smsFrom) {
+      const missing = [];
+      if (!accountSid) missing.push("TWILIO_ACCOUNT_SID");
+      if (!authToken) missing.push("TWILIO_AUTH_TOKEN");
+      if (!smsFrom) missing.push("TWILIO_PHONE_NUMBER");
+      console.error("[TWILIO] Missing env vars:", missing.join(", "));
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Twilio environment variables are missing",
+          error: `Missing Twilio env vars: ${missing.join(", ")}`,
         }),
         { status: 500, headers: corsHeaders },
       );
     }
 
     if (!accountSid.startsWith("AC")) {
+      console.error("[TWILIO] Invalid Account SID format - must start with 'AC'");
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Invalid Twilio Account SID format",
+          error: "Invalid Twilio Account SID format - must start with 'AC'",
         }),
         { status: 400, headers: corsHeaders },
       );
