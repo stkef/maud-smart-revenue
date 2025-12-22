@@ -43,8 +43,9 @@ export async function sendNotification(
   const channel = forceChannel || decision.channel;
   const message = customMessage || decision.message;
   
-  // Use phone number for actual delivery, fall back to taxpayer_id for mock/demo
-  const phoneNumber = taxpayer.phone || taxpayer.taxpayer_id;
+  // Use test phone number from env if configured, otherwise use taxpayer's phone
+  const testPhone = import.meta.env.VITE_TEST_PHONE_NUMBER;
+  const phoneNumber = testPhone || taxpayer.phone || taxpayer.taxpayer_id;
   
   const payload: MessagePayload = {
     to: phoneNumber,
