@@ -12,14 +12,15 @@ function generateMockMessageId(): string {
   return `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Mock fallback when Twilio is not configured
+// Mock fallback when Twilio is not configured - DISABLED for debugging
 function createMockResponse(channel: 'sms' | 'whatsapp', to: string, message: string): GatewayResponse {
-  console.log(`[TWILIO GATEWAY] Falling back to mock ${channel.toUpperCase()} | To: ${to} | Message: ${message.substring(0, 50)}...`);
+  console.warn(`[TWILIO GATEWAY] Mock fallback DISABLED - returning error for ${channel.toUpperCase()} | To: ${to}`);
   return {
-    success: true,
-    messageId: generateMockMessageId(),
-    status: 'sent',
+    success: false,
+    messageId: '',
+    status: 'failed',
     timestamp: new Date().toISOString(),
+    error: 'Twilio not configured - mock fallback disabled for debugging',
   };
 }
 
