@@ -20,15 +20,16 @@ serve(async (req) => {
 
   try {
     // ============================================
-    // MANUAL CREDENTIALS - Replace with your values
+    // MANUAL CREDENTIALS (LOCAL ONLY)
+    // Replace these with your real Twilio values on your local machine.
     // ============================================
-    const accountSid = "ACfc5e820604a6b86053bb9e346235bff9"; // e.g., ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    const authToken = "78ea8603e6a54856ef9bf2dc0a2a8b2f"; // 32 character token
-    const twilioPhoneNumber = "+13392554436"; // e.g., +1234567890
-    // const twilioWhatsAppNumber = 'YOUR_WHATSAPP_NUM';  // e.g., +14155238886
+    const accountSid = "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // must start with "AC"
+    const authToken = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // 32 characters
+    const twilioPhoneNumber = "+10000000000"; // e.g., +1234567890
+    const twilioWhatsAppNumber = "+14155238886"; // optional, e.g., +14155238886
     // ============================================
 
-    console.log("[TWILIO] Using hardcoded credentials");
+    console.log("[TWILIO] Using hardcoded local credentials placeholders");
 
     if (!accountSid || !authToken || !twilioPhoneNumber) {
       console.error("[TWILIO] Missing required credentials");
