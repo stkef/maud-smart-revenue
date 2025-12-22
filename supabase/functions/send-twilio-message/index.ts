@@ -21,8 +21,8 @@ serve(async (req) => {
     // ✅ READ ENV VARIABLES CORRECTLY (THIS FIXES 20003)
     const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
     const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const smsFrom = Deno.env.get("TWILIO_SMS_FROM");
-    const whatsappFrom = Deno.env.get("TWILIO_WHATSAPP_FROM");
+    const smsFrom = Deno.env.get("TWILIO_PHONE_NUMBER");
+    const whatsappFrom = Deno.env.get("TWILIO_WHATSAPP_NUMBER");
 
     if (!accountSid || !authToken || !smsFrom) {
       return new Response(
