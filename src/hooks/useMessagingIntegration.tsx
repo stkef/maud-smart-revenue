@@ -9,6 +9,8 @@ import {
   type Channel,
 } from '@/integrations/messaging';
 import { LocalTaxpayer } from './useLocalTaxpayers';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './useAuth';
 
 export interface NudgeState {
   taxpayerId: string;
@@ -24,10 +26,26 @@ function notifyListeners() {
   listeners.forEach(fn => fn());
 }
 
+// Map risk category to database enum
+function mapRiskLevel(riskCategory: string): 'low' | 'medium' | 'high' {
+  const lower = riskCategory.toLowerCase();
+  if (lower.includes('high')) return 'high';
+  if (lower.includes('medium')) return 'medium';
+  return 'low';
+}
+
+// Map channel to nudge type
+function mapNudgeType(channel: string): 'sms' | 'whatsapp' | 'email' {
+  if (channel === 'whatsapp') return 'whatsapp';
+  if (channel === 'email') return 'email';
+  return 'sms';
+}
+
 export function useMessagingIntegration() {
   const [, forceUpdate] = useState({});
   const [isSending, setIsSending] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ completed: number; total: number } | null>(null);
+  const { user } = useAuth();
 
   // Subscribe to state changes
   useMemo(() => {
@@ -37,6 +55,42 @@ export function useMessagingIntegration() {
       listeners.delete(listener);
     };
   }, []);
+
+  // Persist nudge to database
+  const persistNudge = useCallback(async (
+    taxpayerId: string,
+    message: string,
+    channel: Channel,
+    riskCategory: string,
+    status: 'sent' | 'failed'
+  ) => {
+    if (!user?.id) {
+      console.warn('[NUDGE PERSIST] No user ID, skipping database persist');
+      return;
+    }
+
+    try {
+      const nudgeData = {
+        taxpayer_id: taxpayerId,
+        message,
+        nudge_type: mapNudgeType(channel),
+        risk_level: mapRiskLevel(riskCategory),
+        status: status === 'sent' ? 'sent' as const : 'failed' as const,
+        sent_at: status === 'sent' ? new Date().toISOString() : null,
+        created_by: user.id,
+      };
+
+      const { error } = await supabase.from('nudges').insert(nudgeData);
+      
+      if (error) {
+        console.error('[NUDGE PERSIST] Failed to save nudge:', error);
+      } else {
+        console.log('[NUDGE PERSIST] Nudge saved to database for', taxpayerId);
+      }
+    } catch (err) {
+      console.error('[NUDGE PERSIST] Error saving nudge:', err);
+    }
+  }, [user?.id]);
 
   // Convert LocalTaxpayer to TaxpayerData format
   const toTaxpayerData = useCallback((taxpayer: LocalTaxpayer): TaxpayerData => ({
@@ -72,13 +126,25 @@ export function useMessagingIntegration() {
         forceChannel
       );
 
+      const wasSuccessful = result.status === 'sent' || result.status === 'delivered';
+      
       // Update state based on result
       nudgeStateMap.set(taxpayerId, {
         taxpayerId,
-        status: result.status === 'sent' || result.status === 'delivered' ? 'sent' : 'failed',
+        status: wasSuccessful ? 'sent' : 'failed',
         result,
       });
       notifyListeners();
+      
+      // Persist to database with the actual message sent
+      const messageToSave = result.message || customMessage || 'Nudge sent';
+      await persistNudge(
+        taxpayerId,
+        messageToSave,
+        result.channel,
+        taxpayer.risk_category,
+        wasSuccessful ? 'sent' : 'failed'
+      );
       
       return result;
     } catch (error) {
@@ -88,7 +154,7 @@ export function useMessagingIntegration() {
     } finally {
       setIsSending(false);
     }
-  }, [toTaxpayerData]);
+  }, [toTaxpayerData, persistNudge]);
 
   // Send nudges to multiple taxpayers
   const sendBatchNudges = useCallback(async (
@@ -106,14 +172,27 @@ export function useMessagingIntegration() {
     try {
       const results = await sendBatchNotifications(
         taxpayers.map(toTaxpayerData),
-        (completed, total, result) => {
+        async (completed, total, result) => {
           setBatchProgress({ completed, total });
+          const wasSuccessful = result.status === 'sent' || result.status === 'delivered';
           nudgeStateMap.set(result.taxpayerId, {
             taxpayerId: result.taxpayerId,
-            status: result.status === 'sent' || result.status === 'delivered' ? 'sent' : 'failed',
+            status: wasSuccessful ? 'sent' : 'failed',
             result,
           });
           notifyListeners();
+          
+          // Find the taxpayer to get risk category
+          const taxpayer = taxpayers.find(tp => tp.taxpayer_id === result.taxpayerId);
+          if (taxpayer) {
+            await persistNudge(
+              result.taxpayerId,
+              `Batch nudge sent via ${result.channel}`,
+              result.channel,
+              taxpayer.risk_category,
+              wasSuccessful ? 'sent' : 'failed'
+            );
+          }
         }
       );
       

@@ -49,6 +49,7 @@ export interface NotificationResult {
   status: MessageStatus;
   timestamp: string;
   messageId: string;
+  message?: string;
   error?: string;
 }
 
