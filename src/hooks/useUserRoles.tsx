@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -11,84 +11,61 @@ interface UserWithRole {
 }
 
 export function useUserRoles() {
-  const { user } = useAuth();
+  const { user, isAdmin, rolesLoading } = useAuth();
   const [users, setUsers] = useState<UserWithRole[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      checkAdminStatus();
-    }
-  }, [user]);
-
-  const checkAdminStatus = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .maybeSingle();
-
-    setIsAdmin(!!data);
-    setLoading(false);
-  };
-
-  const fetchAllUsers = async () => {
+  const fetchAllUsers = useCallback(async () => {
     if (!isAdmin) return;
     
     setLoading(true);
     
-    // Fetch all user roles with profile info
-    const { data: rolesData, error: rolesError } = await supabase
-      .from('user_roles')
-      .select('user_id, role, assigned_at');
+    try {
+      // Fetch all user roles with profile info in parallel
+      const [rolesResult, profilesResult] = await Promise.all([
+        supabase.from('user_roles').select('user_id, role, assigned_at'),
+        supabase.from('profiles').select('id, email, full_name'),
+      ]);
 
-    if (rolesError) {
-      console.error('Error fetching roles:', rolesError);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch profiles for these users
-    const userIds = rolesData?.map(r => r.user_id) || [];
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, email, full_name')
-      .in('id', userIds);
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      setLoading(false);
-      return;
-    }
-
-    // Combine data
-    const combinedUsers: UserWithRole[] = (rolesData || []).map(role => {
-      const profile = profilesData?.find(p => p.id === role.user_id);
-      return {
-        user_id: role.user_id,
-        email: profile?.email || 'Unknown',
-        full_name: profile?.full_name || 'Unknown',
-        role: role.role as 'admin' | 'officer',
-        assigned_at: role.assigned_at,
-      };
-    });
-
-    // Group by user and take highest role
-    const userMap = new Map<string, UserWithRole>();
-    combinedUsers.forEach(u => {
-      const existing = userMap.get(u.user_id);
-      if (!existing || (u.role === 'admin' && existing.role !== 'admin')) {
-        userMap.set(u.user_id, u);
+      if (rolesResult.error) {
+        console.error('Error fetching roles:', rolesResult.error);
+        return;
       }
-    });
 
-    setUsers(Array.from(userMap.values()));
-    setLoading(false);
-  };
+      if (profilesResult.error) {
+        console.error('Error fetching profiles:', profilesResult.error);
+        return;
+      }
+
+      const rolesData = rolesResult.data || [];
+      const profilesData = profilesResult.data || [];
+
+      // Combine data
+      const combinedUsers: UserWithRole[] = rolesData.map(role => {
+        const profile = profilesData.find(p => p.id === role.user_id);
+        return {
+          user_id: role.user_id,
+          email: profile?.email || 'Unknown',
+          full_name: profile?.full_name || 'Unknown',
+          role: role.role as 'admin' | 'officer',
+          assigned_at: role.assigned_at,
+        };
+      });
+
+      // Group by user and take highest role
+      const userMap = new Map<string, UserWithRole>();
+      combinedUsers.forEach(u => {
+        const existing = userMap.get(u.user_id);
+        if (!existing || (u.role === 'admin' && existing.role !== 'admin')) {
+          userMap.set(u.user_id, u);
+        }
+      });
+
+      setUsers(Array.from(userMap.values()));
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin]);
 
   const assignRole = async (userId: string, role: 'admin' | 'officer') => {
     const { error } = await supabase
@@ -131,11 +108,10 @@ export function useUserRoles() {
   return {
     users,
     isAdmin,
-    loading,
+    loading: loading || rolesLoading,
     fetchAllUsers,
     assignRole,
     removeRole,
     revokeAccess,
-    checkAdminStatus,
   };
 }

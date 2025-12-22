@@ -43,8 +43,7 @@ export default function LocalDashboard() {
   const { data: taxpayers } = useLocalTaxpayers();
   const { data: stats } = useLocalDashboardStats();
   const { getAllNudgeStates, providerInfo } = useMessagingIntegration();
-  const { user, signOut } = useAuth();
-  const { isAdmin } = useUserRoles();
+  const { user, signOut, isAdmin } = useAuth();
   const nudgeCount = getAllNudgeStates().length;
 
   // Payment tab state
