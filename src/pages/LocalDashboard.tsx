@@ -11,6 +11,7 @@ import { HighRiskTable } from '@/components/HighRiskTable';
 import { NudgeHistoryTable } from '@/components/NudgeHistoryTable';
 import { AdminPanel } from '@/components/AdminPanel';
 import { TaxpayerDetailModal } from '@/components/TaxpayerDetailModal';
+import { AutomationDashboard } from '@/components/AutomationDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain, MessageSquare, ShieldCheck, Settings, ExternalLink, CreditCard, IndianRupee, Clock, TrendingUp, Search, Filter } from 'lucide-react';
+import { LayoutDashboard, LogOut, BarChart3, Users, AlertTriangle, Brain, MessageSquare, ShieldCheck, Settings, ExternalLink, CreditCard, IndianRupee, Clock, TrendingUp, Search, Filter, Bot } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRoles } from '@/hooks/useUserRoles';
@@ -140,10 +141,14 @@ export default function LocalDashboard() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-7' : 'grid-cols-6'} lg:w-auto lg:inline-grid`}>
+          <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-8' : 'grid-cols-7'} lg:w-auto lg:inline-grid`}>
             <TabsTrigger value="overview" className="gap-2">
               <BarChart3 className="h-4 w-4 hidden sm:inline" />
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="automation" className="gap-2">
+              <Bot className="h-4 w-4 hidden sm:inline" />
+              Automation
             </TabsTrigger>
             <TabsTrigger value="high-risk" className="gap-2">
               <AlertTriangle className="h-4 w-4 hidden sm:inline" />
@@ -252,6 +257,11 @@ export default function LocalDashboard() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* Automation Tab */}
+          <TabsContent value="automation" className="space-y-6">
+            <AutomationDashboard />
           </TabsContent>
 
           {/* High Risk Tab */}
