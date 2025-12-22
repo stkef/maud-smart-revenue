@@ -24,11 +24,30 @@ serve(async (req) => {
     const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
     const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
 
+    // Debug: Log credential status (not actual values for security)
+    console.log('[TWILIO] Credential check:', {
+      hasAccountSid: !!accountSid,
+      accountSidPrefix: accountSid ? accountSid.substring(0, 6) + '...' : 'MISSING',
+      hasAuthToken: !!authToken,
+      authTokenLength: authToken ? authToken.length : 0,
+      hasPhoneNumber: !!twilioPhoneNumber,
+      phoneNumber: twilioPhoneNumber || 'MISSING'
+    });
+
     if (!accountSid || !authToken || !twilioPhoneNumber) {
       console.error('[TWILIO] Missing required credentials');
       return new Response(
         JSON.stringify({ success: false, error: 'Twilio credentials not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate Account SID format (should start with AC)
+    if (!accountSid.startsWith('AC')) {
+      console.error('[TWILIO] Invalid Account SID format - must start with AC');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid Account SID format - must start with AC' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
