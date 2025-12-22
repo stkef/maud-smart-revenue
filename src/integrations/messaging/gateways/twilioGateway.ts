@@ -12,15 +12,14 @@ function generateMockMessageId(): string {
   return `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Mock fallback when Twilio is not configured - DISABLED for debugging
+// Mock fallback when Twilio is not configured
 function createMockResponse(channel: 'sms' | 'whatsapp', to: string, message: string): GatewayResponse {
-  console.warn(`[TWILIO GATEWAY] Mock fallback DISABLED - returning error for ${channel.toUpperCase()} | To: ${to}`);
+  console.log(`[TWILIO GATEWAY] Falling back to mock ${channel.toUpperCase()} | To: ${to} | Message: ${message.substring(0, 50)}...`);
   return {
-    success: false,
-    messageId: '',
-    status: 'failed',
+    success: true,
+    messageId: generateMockMessageId(),
+    status: 'sent',
     timestamp: new Date().toISOString(),
-    error: 'Twilio not configured - mock fallback disabled for debugging',
   };
 }
 
@@ -28,7 +27,7 @@ async function callTwilioEdgeFunction(
   to: string,
   message: string,
   channel: 'sms' | 'whatsapp'
-): Promise<{ success: boolean; sid?: string; error?: string; notConfigured?: boolean; whatsappNotEnabled?: boolean }> {
+): Promise<{ success: boolean; sid?: string; error?: string; notConfigured?: boolean }> {
   try {
     console.log(`[TWILIO GATEWAY] Calling edge function for ${channel} to ${to}`);
     
@@ -38,6 +37,7 @@ async function callTwilioEdgeFunction(
 
     if (error) {
       console.error('[TWILIO GATEWAY] Edge function error:', error);
+      // Check if error is due to missing credentials
       if (error.message?.includes('credentials') || error.message?.includes('not configured')) {
         return { success: false, notConfigured: true, error: error.message };
       }
@@ -46,11 +46,7 @@ async function callTwilioEdgeFunction(
 
     if (!data.success) {
       console.error('[TWILIO GATEWAY] Twilio API error:', data.error);
-      // Check for WhatsApp channel not enabled error (63007)
-      if (data.code === 63007 || data.error?.includes('Channel with the specified From address')) {
-        console.log('[TWILIO GATEWAY] WhatsApp not enabled for this number, will fall back to SMS');
-        return { success: false, whatsappNotEnabled: true, error: data.error };
-      }
+      // Check if error is due to missing credentials
       if (data.error?.includes('credentials') || data.error?.includes('not configured')) {
         return { success: false, notConfigured: true, error: data.error };
       }
@@ -61,6 +57,7 @@ async function callTwilioEdgeFunction(
     return { success: true, sid: data.sid };
   } catch (error) {
     console.error('[TWILIO GATEWAY] Unexpected error:', error);
+    // Network errors or edge function not deployed - fall back to mock
     return { 
       success: false, 
       notConfigured: true,
@@ -110,31 +107,6 @@ export const twilioGateway: GatewayInterface = {
     if (result.notConfigured) {
       console.log('[TWILIO GATEWAY] Twilio not configured, using mock fallback');
       return createMockResponse('whatsapp', payload.to, payload.message);
-    }
-    
-    // If WhatsApp not enabled for this number, automatically fall back to SMS
-    if (result.whatsappNotEnabled) {
-      console.log('[TWILIO GATEWAY] WhatsApp not enabled, falling back to SMS');
-      const smsResult = await callTwilioEdgeFunction(payload.to, payload.message, 'sms');
-      
-      if (smsResult.success) {
-        console.log(`[TWILIO SMS FALLBACK] Sent successfully | SID: ${smsResult.sid}`);
-        return {
-          success: true,
-          messageId: smsResult.sid || generateMessageId(),
-          status: 'sent',
-          timestamp,
-        };
-      }
-      
-      // If SMS also fails, return the error
-      return {
-        success: false,
-        messageId: '',
-        status: 'failed',
-        timestamp,
-        error: smsResult.error || 'SMS fallback failed',
-      };
     }
     
     if (!result.success) {

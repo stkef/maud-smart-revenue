@@ -11,7 +11,7 @@ import type {
 import { makeDecision } from './decisionEngine';
 import { mockGateway } from './gateways/mockGateway';
 import { twilioGateway } from './gateways/twilioGateway';
-import { getMessagingConfig, isTwilioConfigured, getTestPhoneNumber } from './config';
+import { getMessagingConfig, isTwilioConfigured } from './config';
 
 /**
  * Get the appropriate gateway based on configuration
@@ -43,9 +43,8 @@ export async function sendNotification(
   const channel = forceChannel || decision.channel;
   const message = customMessage || decision.message;
   
-  // Use test phone number from config if set, otherwise use taxpayer's phone
-  const testPhone = getTestPhoneNumber();
-  const phoneNumber = testPhone || taxpayer.phone || taxpayer.taxpayer_id;
+  // Use phone number for actual delivery, fall back to taxpayer_id for mock/demo
+  const phoneNumber = taxpayer.phone || taxpayer.taxpayer_id;
   
   const payload: MessagePayload = {
     to: phoneNumber,
@@ -78,7 +77,6 @@ export async function sendNotification(
         status: fallbackResponse.status,
         timestamp: fallbackResponse.timestamp,
         messageId: fallbackResponse.messageId,
-        message,
         error: fallbackResponse.error,
       };
     }
@@ -90,7 +88,6 @@ export async function sendNotification(
       status: response.status,
       timestamp: response.timestamp,
       messageId: response.messageId,
-      message,
       error: response.error,
     };
   } catch (error) {
@@ -102,7 +99,6 @@ export async function sendNotification(
       status: 'failed',
       timestamp: new Date().toISOString(),
       messageId: '',
-      message,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
