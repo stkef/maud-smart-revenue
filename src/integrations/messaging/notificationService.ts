@@ -11,7 +11,7 @@ import type {
 import { makeDecision } from './decisionEngine';
 import { mockGateway } from './gateways/mockGateway';
 import { twilioGateway } from './gateways/twilioGateway';
-import { getMessagingConfig, isTwilioConfigured } from './config';
+import { getMessagingConfig, isTwilioConfigured, getTestPhoneNumber } from './config';
 
 /**
  * Get the appropriate gateway based on configuration
@@ -43,8 +43,8 @@ export async function sendNotification(
   const channel = forceChannel || decision.channel;
   const message = customMessage || decision.message;
   
-  // Use test phone number from env if configured, otherwise use taxpayer's phone
-  const testPhone = import.meta.env.VITE_TEST_PHONE_NUMBER;
+  // Use test phone number from config if set, otherwise use taxpayer's phone
+  const testPhone = getTestPhoneNumber();
   const phoneNumber = testPhone || taxpayer.phone || taxpayer.taxpayer_id;
   
   const payload: MessagePayload = {
