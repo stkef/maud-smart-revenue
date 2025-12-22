@@ -19,20 +19,16 @@ serve(async (req) => {
   }
 
   try {
-    const accountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const authToken = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
-    const twilioWhatsAppNumber = Deno.env.get('TWILIO_WHATSAPP_NUMBER');
+    // ============================================
+    // MANUAL CREDENTIALS - Replace with your values
+    // ============================================
+    const accountSid = 'YOUR_TWILIO_ACCOUNT_SID';      // e.g., ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    const authToken = 'YOUR_TWILIO_AUTH_TOKEN';        // 32 character token
+    const twilioPhoneNumber = 'YOUR_TWILIO_PHONE';     // e.g., +1234567890
+    const twilioWhatsAppNumber = 'YOUR_WHATSAPP_NUM';  // e.g., +14155238886
+    // ============================================
 
-    // Debug: Log credential status (not actual values for security)
-    console.log('[TWILIO] Credential check:', {
-      hasAccountSid: !!accountSid,
-      accountSidPrefix: accountSid ? accountSid.substring(0, 6) + '...' : 'MISSING',
-      hasAuthToken: !!authToken,
-      authTokenLength: authToken ? authToken.length : 0,
-      hasPhoneNumber: !!twilioPhoneNumber,
-      phoneNumber: twilioPhoneNumber || 'MISSING'
-    });
+    console.log('[TWILIO] Using hardcoded credentials');
 
     if (!accountSid || !authToken || !twilioPhoneNumber) {
       console.error('[TWILIO] Missing required credentials');
